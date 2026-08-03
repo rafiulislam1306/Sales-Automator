@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Sales Report Automator</title>
+    
+
+    
+    
+    <style>
+        :root {
+            /* Theme variables - Light Mode Default */
+            --bg-gradient: radial-gradient(circle at top right, #f0f4ff, #f8fafc);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(226, 232, 240, 0.8);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #e0e7ff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --table-header-bg: #4f46e5;
+            --table-row-hover: #f1f5f9;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --backdrop-blur: 12px;
+        }
+
+        /* Dark Theme Variables */
+        [data-theme="dark"] {
+            --bg-gradient: radial-gradient(circle at top right, #0f172a, #020617);
+            --card-bg: rgba(15, 23, 42, 0.7);
+            --card-border: rgba(51, 65, 85, 0.5);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --primary-hover: #0ea5e9;
+            --primary-light: #0c4a6e;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --warning-light: #78350f;
+            --danger: #f87171;
+            --danger-light: #7f1d1d;
+            --table-header-bg: #0284c7;
+            --table-row-hover: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Theme Switcher Button */
+        #theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            border-radius: 9999px;
+            color: var(--text-main);
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+        #theme-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+        }
+
+        .header-container {
+            text-align: center;
+            margin-bottom: 30px;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: -0.025em;
+        }
+
+        .description {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        /* Drop Zone */
+        #drop-zone {
+            width: 100%;
+            max-width: 800px;
+            height: 180px;
+            border: 2px dashed var(--primary);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--backdrop-blur));
+            color: var(--primary);
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            gap: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        #drop-zone.hover {
+            background: var(--primary-light);
+            border-color: var(--primary-hover);
+            transform: scale(1.015);
+            box-shadow: var(--shadow-lg);
+        }
+        #drop-zone svg {
+            width: 48px;
+            height: 48px;
+            stroke: currentColor;
+            fill: none;
+            transition: transform 0.3s ease;
+        }
+        #drop-zone:hover svg {
+            transform: translateY(-4px);
+        }
+        #drop-zone-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        #drop-zone-subtext {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* Notification Banner / Alert */
+        .alert {
+            width: 100%;
+            max-width: 800px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: flex-start;
+            gap: 12px;
+            box-shadow: var(--shadow-sm);
+            animation: slideIn 0.3s ease;
+        }
+        .alert-error {
+            background-color: var(--danger-light);
+            border: 1px solid var(--danger);
+            color: var(--text-main);
+        }
+        .alert-warning {
+            background-color: var(--warning-light);
+            border: 1px solid var(--warning);
+            color: var(--text-main);
+        }
+        .alert-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .alert-content {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .alert-content ul {
+            margin-top: 8px;
+            margin-left: 20px;
+        }
+
+        /* Main Report Container */
+        #report-container {
+            width: 100%;
+            max-width: 950px;
+            margin-top: 30px;
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--backdrop-blur));
+            border: 1px solid var(--card-border);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .report-title-group h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .report-date-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        /* Filter Controls */
+        details {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        summary {
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--primary);
+            user-select: none;
+            outline: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary::after {
+            content: "▼";
+            font-size: 0.8rem;
+            transition: transform 0.2s ease;
+        }
+        details[open] summary::after {
+            transform: rotate(180deg);
+        }
+        .filter-content {
+            padding: 20px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .filter-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .filter-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+        .filter-links {
+            font-size: 0.85rem;
+        }
+        .filter-links span {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .filter-links span:hover {
+            color: var(--primary-hover);
+        }
+        .checkbox-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .checkbox-label {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .checkbox-label:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .checkbox-label input[type="checkbox"] {
+            accent-color: var(--primary);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        /* View Mode Segmented Control */
+        .view-mode-selector {
+            display: inline-flex;
+            background: var(--card-border);
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            gap: 2px;
+        }
+        .view-mode-btn {
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .view-mode-btn.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Table Styling */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            text-align: left;
+        }
+        th, td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        th {
+            background-color: var(--table-header-bg);
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:hover {
+            background-color: var(--table-row-hover);
+        }
+        .agent-header {
+            background-color: var(--card-border);
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 1.05rem;
+        }
+        .category-header {
+            background-color: var(--table-row-hover);
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-refund {
+            color: var(--danger);
+            font-weight: 500;
+        }
+
+        /* Summary Dashboard */
+        .summary-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .summary-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .summary-card-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .summary-card-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Buttons & Footer */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn {
+            padding: 12px 24px;
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--card-border);
+        }
+        .btn-secondary:hover {
+            background-color: var(--table-row-hover);
+            color: var(--text-main);
+        }
+
+        /* Collapsible SIM numbers details styling */
+        .clickable-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .clickable-row:hover {
+            background-color: var(--table-row-hover);
+        }
+        .expand-arrow {
+            display: inline-block;
+            font-size: 0.75rem;
+            color: var(--primary);
+            margin-right: 6px;
+            transition: transform 0.2s ease;
+            width: 12px;
+        }
+        .details-row {
+            background-color: rgba(241, 245, 249, 0.4);
+        }
+        [data-theme="dark"] .details-row {
+            background-color: rgba(30, 41, 59, 0.4);
+        }
+        .details-cell {
+            padding: 10px 18px 14px 48px !important;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .details-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .details-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .badges-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .number-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .number-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+            background: var(--primary-hover);
+            color: #ffffff;
+        }
+        .btn-copy {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-copy:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .btn-copy.copied {
+            background: var(--success);
+            color: #ffffff;
+            border-color: var(--success);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Print Media Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                padding: 0;
+            }
+            #theme-toggle,
+            #drop-zone,
+            #filter-container,
+            .view-mode-selector,
+            .action-bar,
+            .alert-warning {
+                display: none !important;
+            }
+            #report-container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                max-width: 100%;
+                display: block !important;
+                background: transparent;
+            }
+            .table-container {
+                border: 1px solid #000000;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            th {
+                background-color: #f1f5f9 !important;
+                color: #000000 !important;
+                border-bottom: 2px solid #000000;
+            }
+            td {
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .agent-header {
+                background-color: #f8fafc !important;
+                color: #000000 !important;
+                border-top: 2px solid #000000;
+                border-bottom: 1px solid #000000;
+            }
+            .category-header {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                font-style: italic;
+            }
+            .details-row {
+                display: table-row !important;
+            }
+            .expand-arrow, .btn-copy {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Theme Toggle -->
+    <button id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme">
+        <svg style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+            <path id="theme-icon" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="theme-text">Dark Mode</span>
+    </button>
+
+    <div class="header-container">
+        <h1>Agent Sales Report Generator</h1>
+        <p class="description">Drag and drop your raw daily CSV transaction file below to generate a validated, error-free summary report.</p>
+    </div>
+
+    <!-- Dynamic Warning / Error Alerts -->
+    <div id="alert-box" class="alert">
+        <div class="alert-icon" id="alert-icon">⚠️</div>
+        <div class="alert-content" id="alert-content"></div>
+    </div>
+
+    <!-- Drop Zone -->
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <div id="drop-zone-text">Drag & Drop your CSV file here</div>
+        <div id="drop-zone-subtext">or click to browse your computer</div>
+    </div>
+    <input type="file" id="file-input" accept=".csv">
+
+    <!-- Report Container -->
+    <div id="report-container">
+        <div class="report-header">
+            <div class="report-title-group">
+                <h2>Daily Sales Report</h2>
+            </div>
+            <div class="report-date-badge">
+                Date: <span id="report-date"></span>
+            </div>
+        </div>
+
+        <!-- Filter Collapse Container -->
+        <details id="filter-container">
+            <summary>Filter Agents & Services</summary>
+            <div class="filter-content">
+                <div>
+                    <div class="filter-group-header">
+                        <span class="filter-title">Filter by Agent:</span>
+                        <div class="filter-links">
+                            <span onclick="toggleFilters('agent', true)">Select All</span> &nbsp;|&nbsp; 
+                            <span onclick="toggleFilters('agent', false)">Clear All</span>
+                        </div>
+                    </div>
+                    <div id="agent-filters" class="checkbox-grid"></div>
+                </div>
+                <div>
+                    <div class="filter-group-header">
+                        <span class="filter-title">Filter by Service / Item:</span>
+                        <div class="filter-links">
+                            <span onclick="toggleFilters('item', true)">Select All</span> &nbsp;|&nbsp; 
+                            <span onclick="toggleFilters('item', false)">Clear All</span>
+                        </div>
+                    </div>
+                    <div id="item-filters" class="checkbox-grid"></div>
+                </div>
+            </div>
+        </details>
+
+        <!-- View Selector -->
+        <div class="view-mode-selector">
+            <button id="view-agent-btn" class="view-mode-btn active" onclick="setViewMode('agent')">Agent-wise Breakdown</button>
+            <button id="view-consolidated-btn" class="view-mode-btn" onclick="setViewMode('consolidated')">Consolidated Summary</button>
+        </div>
+
+        <!-- Dynamic Table Wrapper -->
+        <div class="table-container">
+            <div id="table-wrapper"></div>
+        </div>
+
+        <!-- KPI Metrics Dashboard -->
+        <div class="summary-dashboard">
+            <div class="summary-card">
+                <span class="summary-card-label">Total Net Quantity Sold</span>
+                <span class="summary-card-value" id="grand-qty">0</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-card-label">Total Gross Revenue</span>
+                <span class="summary-card-value" id="grand-total">0.00</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="resetAutomator()">Upload Another File</button>
+            <button class="btn" onclick="window.print()">
+                <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                Print / Save as PDF
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const reportContainer = document.getElementById('report-container');
+        const tableWrapper = document.getElementById('table-wrapper');
+        const agentFiltersContainer = document.getElementById('agent-filters');
+        const itemFiltersContainer = document.getElementById('item-filters');
+        const alertBox = document.getElementById('alert-box');
+        const alertContent = document.getElementById('alert-content');
+        const alertIcon = document.getElementById('alert-icon');
+
+        let globalSummary = {};
+        let uniqueItems = new Set();
+        let uniqueAgents = new Set();
+        let unmappedReportItems = new Set();
+        let activeViewMode = 'agent';
+
+        const displayCategories = ["New SIMs", "Replacements", "Services", "FOC Items", "Other / Handsets"];
+
+        // Expanded Product Mappings
+        const productMapping = {
+            "djuice": "Djuice",
+            "Djuice_Bundle": "Djuice",
+            "Grameenphone Prepaid": "Djuice",
+            "Nischinto_Bundle": "Djuice",
+            "GP PREPAID 2": "Skitto",
+            "Skitto_Bundle": "Skitto",
+            "MY PLAN": "Prime",
+            "Prime_Bundle": "Prime",
+            "Nishchinto_ On-Request": "Recycle SIM",
+            "Nishchinto_ On-Request_Bundle": "Recycle SIM",
+            "ONE number plan - Nishchinto": "No. 1 Plan",
+            "ONE number plan bundle - Nishchinto": "No. 1 Plan",
+            "Power Prime Connection": "Power Prime",
+            "Power Prime Service": "Power Prime",
+            "eSIM GP POSTPAID- MYPLAN": "eSIM Postpaid",
+            "eSIM Prime_Bundle": "eSIM Postpaid",
+            "eSIM GP PREPAID- NISHCHINTO": "eSIM Prepaid",
+            "eSIM NISHCHINTO_Bundle": "eSIM Prepaid",
+            "eSIM SKITTO": "eSIM Skitto",
+            "eSIM SKITTO_Bundle": "eSIM Skitto",
+            "Pre - 041": "Regular Replacement Kit",
+            "TINTIN-PRE-097": "Skitto Replacement Kit",
+            "eREPLACEMENT PRE/POST": "eSIM Replacement Kit",
+            "eREPLACEMENT SKITTO": "eSIM Skitto Replacement Kit",
+            "Flexi Load": "ERS",
+            "Itemized Bill - Pre": "Itemized Bill",
+            "Reactivation": "Recycle SIM Re-issue",
+            "SERVICE CHARGE FOR MNP SERVICE": "MNP",
+            "TOF Death Case": "Death ToF",
+            "TOF Indv To Indv": "Ownership Transfer",
+            "40132640_Alo CC Camera A3A": "Alo CC Camera",
+            "Biometric Status Check": "Biometric Check",
+            "Deactivation": "Deactivation",
+            "Sim Verification": "SIM Verification",
+            
+            // Newly mapped entries from validation
+            "Prepaid Current Balance Refund": "Prepaid Balance Refund",
+            "Local Advance Refund": "Local Advance Refund",
+            "21015902_ZTE_F30 Pro_SF": "ZTE F30 Pro SF"
+        };
+
+        function getCategory(itemName) {
+            const sims = ["Djuice", "Skitto", "Prime", "No. 1 Plan", "Power Prime", "eSIM Postpaid", "eSIM Prepaid", "eSIM Skitto", "Recycle SIM", "Recycled SIM"];
+            const services = [
+                "ERS", "Itemized Bill", "Recycle SIM Re-issue", "MNP", "Death ToF", 
+                "Ownership Transfer", "Biometric Check", "Deactivation", "SIM Verification",
+                "Prepaid Balance Refund", "Local Advance Refund"
+            ];
+            
+            if (sims.includes(itemName)) return "New SIMs";
+            if (itemName.includes("Kit") || itemName.includes("Replacement")) return "Replacements";
+            if (services.includes(itemName)) return "Services";
+            if (itemName.includes("FOC")) return "FOC Items";
+            return "Other / Handsets";
+        }
+
+        // Robust CSV Parser (RFC 4180 compliant)
+        function parseCSV(text) {
+            const result = [];
+            let row = [];
+            let col = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const next = text[i+1];
+                
+                if (char === '"') {
+                    if (inQuotes && next === '"') {
+                        col += '"';
+                        i++; // skip escaped quote
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push(col);
+                    col = '';
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    if (char === '\r' && next === '\n') {
+                        i++;
+                    }
+                    row.push(col);
+                    result.push(row);
+                    row = [];
+                    col = '';
+                } else {
+                    col += char;
+                }
+            }
+            if (col !== '' || row.length > 0) {
+                row.push(col);
+                result.push(row);
+            }
+            return result;
+        }
+
+        // Initialize drag-drop event listeners
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('hover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('hover'), false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files), false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            const file = files[0];
+            
+            if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+                showUIError('Error: Please upload a valid CSV file.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processCSV(text);
+            };
+            reader.onerror = function() {
+                showUIError('Error: Failed to read file.');
+            };
+            reader.readAsText(file);
+        }
+
+        function showUIError(message) {
+            alertIcon.textContent = '❌';
+            alertBox.className = 'alert alert-error';
+            alertContent.textContent = message;
+            alertBox.style.display = 'flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function processCSV(csvText) {
+            hideAlerts();
+            const rows = parseCSV(csvText);
+            let headers = [];
+            let dataStartIndex = 0;
+
+            // Find start of transaction data
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i].length > 0 && rows[i][0] === 'TRANSACTION_DATE') {
+                    headers = rows[i];
+                    dataStartIndex = i + 1;
+                    break;
+                }
+            }
+
+            if (headers.length === 0) {
+                showUIError('Invalid CSV Format: Could not find the transaction headers. Ensure columns start with TRANSACTION_DATE.');
+                return;
+            }
+
+            // Safe header mappings
+            const dateIdx = headers.indexOf('TRANSACTION_DATE');
+            const empIdx = headers.indexOf('EMP_ID');
+            const itemIdx = headers.indexOf('ITEM_DESCRIPTION');
+            const qtyIdx = headers.indexOf('QUANTITY');
+            const amountIdx = headers.indexOf('GROSS_AMOUNT');
+            const focIdx = headers.indexOf('FOC_REASON');
+            const unitPriceIdx = headers.indexOf('UNIT_PRICE');
+
+            // Verify essential columns exist
+            const essential = { 'EMP_ID': empIdx, 'ITEM_DESCRIPTION': itemIdx, 'QUANTITY': qtyIdx, 'GROSS_AMOUNT': amountIdx };
+            const missing = Object.keys(essential).filter(key => essential[key] === -1);
+            if (missing.length > 0) {
+                showUIError(`Invalid CSV Columns: The following mandatory headers are missing: ${missing.join(', ')}`);
+                return;
+            }
+
+            let reportDate = "Date not found";
+            globalSummary = {};
+            uniqueItems.clear();
+            uniqueAgents.clear(); 
+            unmappedReportItems.clear();
+
+            for (let i = dataStartIndex; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0 || row.join('').trim() === '') continue; // Skip empty rows
+
+                // Safe index check to avoid errors
+                if (row.length <= Math.max(empIdx, itemIdx, qtyIdx, amountIdx)) continue;
+
+                if (reportDate === "Date not found" && dateIdx !== -1 && row[dateIdx]) {
+                    reportDate = row[dateIdx].trim();
+                }
+
+                const rawAgent = row[empIdx] ? row[empIdx].trim() : '';
+                if (!rawAgent) continue;
+                
+                const agentId = rawAgent.replace('gpcf7329.', '').trim(); 
+                const rawItem = row[itemIdx] ? row[itemIdx].trim().replace(/\s+/g, ' ') : '';
+                if (!rawItem) continue;
+
+                let isMapped = true;
+                let item = productMapping[rawItem];
+                if (!item) {
+                    item = rawItem;
+                    unmappedReportItems.add(rawItem);
+                    isMapped = false;
+                }
+                
+                let qty = parseFloat(row[qtyIdx]) || 0;
+                let amount = parseFloat(row[amountIdx]) || 0;
+                let unitPrice = unitPriceIdx !== -1 ? (parseFloat(row[unitPriceIdx]) || 0) : 0;
+
+                // Skip system check Reactivation fees with 0 price
+                if (item === "Recycle SIM Re-issue" && unitPrice === 0) {
+                    continue; 
+                }
+
+                // --- REFUND LOGIC ---
+                // If the Gross Amount is negative, negate the quantity count so it subtracts instead of inflating items sold.
+                if (amount < 0 && qty > 0) {
+                    qty = -qty;
+                }
+
+                // --- FOC LOGIC ---
+                if (focIdx !== -1 && row[focIdx] && row[focIdx].trim() !== "") {
+                    const focReason = row[focIdx].trim().toLowerCase();
+                    const isEsim = (
+                        unitPrice === 349 || 
+                        rawItem.toLowerCase().includes("esim") || 
+                        rawItem.toLowerCase().includes("ereplacement") || 
+                        item.toLowerCase().includes("esim")
+                    );
+
+                    if (focReason.includes("govt") || focReason.includes("government")) {
+                        item = isEsim ? "Govt. FOC eSIM" : "Govt. FOC Regular";
+                        amount = 0;
+                    } else {
+                        item = isEsim ? "FOC eSIM" : "FOC Regular";
+                        amount = 0; 
+                    }
+                }
+
+                // Bundle qty suppression to prevent double counting activation volume
+                if (rawItem.toLowerCase().includes('bundle') || rawItem === "Power Prime Service") {
+                    qty = 0;
+                }
+
+                if (!globalSummary[agentId]) {
+                    globalSummary[agentId] = {};
+                }
+                if (!globalSummary[agentId][item]) {
+                    globalSummary[agentId][item] = { qty: 0, amount: 0, simNumbers: [] };
+                }
+
+                globalSummary[agentId][item].qty += qty;
+                globalSummary[agentId][item].amount += amount;
+
+                // Capture SIM/MNP/FOC number for New SIM sales, MNP, and FOC items
+                const isNewSim = getCategory(item) === "New SIMs";
+                const isMnp = item === "MNP";
+                const isFoc = item.includes("FOC");
+                if ((isNewSim || isMnp || isFoc) && qty > 0) {
+                    const msisdnIdx = headers.indexOf('MSISDN_IMEI');
+                    const custMsisdnIdx = headers.indexOf('CUSTOMER_MSISDN');
+                    let rawNum = '';
+                    if (msisdnIdx !== -1 && row[msisdnIdx]) {
+                        rawNum = row[msisdnIdx].trim();
+                    }
+                    if ((!rawNum || rawNum === "'") && custMsisdnIdx !== -1 && row[custMsisdnIdx]) {
+                        rawNum = row[custMsisdnIdx].trim();
+                    }
+                    
+                    let cleanedNum = rawNum.replace(/['\s]/g, '');
+                    if (cleanedNum && cleanedNum !== '') {
+                        if (cleanedNum.startsWith('880')) {
+                            cleanedNum = '0' + cleanedNum.substring(3);
+                        }
+                        if (cleanedNum.length === 10 && /^[1-9]/.test(cleanedNum)) {
+                            cleanedNum = '0' + cleanedNum;
+                        }
+                        if (!globalSummary[agentId][item].simNumbers.includes(cleanedNum)) {
+                            globalSummary[agentId][item].simNumbers.push(cleanedNum);
+                        }
+                    }
+                }
+                
+                uniqueItems.add(item);
+                uniqueAgents.add(agentId);
+            }
+
+            document.getElementById('report-date').textContent = reportDate;
+            
+            // Check for unmapped catalog entries to trigger warning banner
+            if (unmappedReportItems.size > 0) {
+                triggerUnmappedWarning();
+            }
+
+            renderFilters();
+            generateTable();
+            
+            dropZone.style.display = 'none';
+            document.querySelector('.header-container').style.display = 'none';
+            reportContainer.style.display = 'block';
+        }
+
+        function triggerUnmappedWarning() {
+            alertIcon.textContent = '⚠️';
+            alertBox.className = 'alert alert-warning';
+            
+            let listHtml = '<strong>Notice:</strong> The following raw items from the CSV are not in the product mapping catalog. They have been categorized under <em>"Other / Handsets"</em> using their raw descriptions:';
+            listHtml += '<ul>';
+            unmappedReportItems.forEach(item => {
+                listHtml += `<li>"${item}"</li>`;
+            });
+            listHtml += '</ul>';
+            
+            alertContent.innerHTML = listHtml;
+            alertBox.style.display = 'flex';
+        }
+
+        function hideAlerts() {
+            alertBox.style.display = 'none';
+            alertContent.innerHTML = '';
+        }
+
+        function toggleFilters(group, state) {
+            const containerId = group === 'agent' ? 'agent-filters' : 'item-filters';
+            const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]`);
+            checkboxes.forEach(cb => cb.checked = state);
+            generateTable();
+        }
+
+        function renderFilters() {
+            agentFiltersContainer.innerHTML = '';
+            itemFiltersContainer.innerHTML = '';
+            
+            const agentsArray = Array.from(uniqueAgents).sort();
+            const itemsArray = Array.from(uniqueItems).sort();
+            
+            agentsArray.forEach(agent => {
+                const label = document.createElement('label');
+                label.className = 'checkbox-label';
+                label.innerHTML = `<input type="checkbox" value="${agent}" checked onchange="generateTable()"> ${agent.toUpperCase()}`;
+                agentFiltersContainer.appendChild(label);
+            });
+
+            itemsArray.forEach(item => {
+                const label = document.createElement('label');
+                label.className = 'checkbox-label';
+                label.innerHTML = `<input type="checkbox" value="${item}" checked onchange="generateTable()"> ${item}`;
+                itemFiltersContainer.appendChild(label);
+            });
+        }
+
+        function setViewMode(mode) {
+            activeViewMode = mode;
+            document.getElementById('view-agent-btn').className = `view-mode-btn ${mode === 'agent' ? 'active' : ''}`;
+            document.getElementById('view-consolidated-btn').className = `view-mode-btn ${mode === 'consolidated' ? 'active' : ''}`;
+            generateTable();
+        }
+
+        function generateTable() {
+            const activeAgents = Array.from(document.querySelectorAll('#agent-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+            const activeItems = Array.from(document.querySelectorAll('#item-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            let grandTotalQty = 0;
+            let grandTotalAmount = 0;
+            let visibleRowsCount = 0;
+
+            let html = `<table>
+                            <thead>
+                                <tr>
+                                    <th>Item Description</th>
+                                    <th class="text-right">Total Quantity</th>
+                                    <th class="text-right">Gross Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+            if (activeViewMode === 'agent') {
+                const agents = Object.keys(globalSummary).sort();
+
+                agents.forEach(agent => {
+                    if (!activeAgents.includes(agent)) return;
+
+                    let agentTotalQty = 0;
+                    let agentTotalAmount = 0;
+                    let agentHtml = '';
+
+                    displayCategories.forEach(category => {
+                        const allAgentItems = Object.keys(globalSummary[agent]);
+                        const categoryItems = allAgentItems.filter(item => getCategory(item) === category && activeItems.includes(item)).sort();
+                        
+                        if (categoryItems.length > 0) {
+                            agentHtml += `<tr class="category-header">
+                                            <td colspan="3" style="padding-left: 20px;">-- ${category.toUpperCase()} --</td>
+                                          </tr>`;
+                            
+                            categoryItems.forEach(item => {
+                                const data = globalSummary[agent][item];
+                                agentTotalQty += data.qty;
+                                agentTotalAmount += data.amount;
+
+                                const isRefund = data.qty < 0 || data.amount < 0;
+                                const qtyClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+                                const amountClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+
+                                const hasDetails = (category === "New SIMs" || item === "MNP" || item.includes("FOC")) && data.simNumbers && data.simNumbers.length > 0;
+                                const detailsId = `details-agent-${agent}-${item.replace(/\s+/g, '-')}`;
+
+                                if (hasDetails) {
+                                    agentHtml += `<tr onclick="toggleDetailsRow('${detailsId}')" class="clickable-row">
+                                                <td style="padding-left: 35px; font-weight: 500;">
+                                                    <span id="arrow-${detailsId}" class="expand-arrow">▶</span> ${item}
+                                                </td>
+                                                <td ${qtyClass}>${data.qty}</td>
+                                                <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                             </tr>
+                                             <tr id="${detailsId}" class="details-row" style="display: none;">
+                                                <td colspan="3" class="details-cell">
+                                                    <div class="details-container">
+                                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                                            <span class="details-title">SOLD NUMBERS (${data.simNumbers.length}):</span>
+                                                            <button onclick="copyToClipboard('${item.replace(/'/g, "\\'")}:\\n${data.simNumbers.join(', ')}', this, event)" class="btn-copy">
+                                                                <svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                                                </svg>
+                                                                Copy All
+                                                            </button>
+                                                        </div>
+                                                        <div class="badges-wrapper">
+                                                            ${data.simNumbers.map(num => `<span class="number-badge" title="Click to copy" onclick="copyToClipboard('${num}', this, event)">${num}</span>`).join('')}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                             </tr>`;
+                                } else {
+                                    agentHtml += `<tr>
+                                                <td style="padding-left: 35px;">${item}</td>
+                                                <td ${qtyClass}>${data.qty}</td>
+                                                <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                             </tr>`;
+                                }
+                            });
+                        }
+                    });
+
+                    if (agentTotalQty !== 0 || agentTotalAmount !== 0) {
+                        html += `<tr class="agent-header">
+                                    <td colspan="3">Agent: ${agent.toUpperCase()}</td>
+                                 </tr>`;
+                        html += agentHtml;
+                        
+                        const subtotalIsRefund = agentTotalQty < 0 || agentTotalAmount < 0;
+                        const subtotalQtyClass = subtotalIsRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+                        const subtotalAmountClass = subtotalIsRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+
+                        html += `<tr style="background-color: var(--table-row-hover); font-weight: 600;">
+                                    <td class="text-right" style="padding-right: 20px;"><em>Subtotal for ${agent.toUpperCase()}</em></td>
+                                    <td ${subtotalQtyClass} style="border-top: 1px solid var(--card-border);">${agentTotalQty}</td>
+                                    <td ${subtotalAmountClass} style="border-top: 1px solid var(--card-border);">${agentTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                 </tr>`;
+                        
+                        grandTotalQty += agentTotalQty;
+                        grandTotalAmount += agentTotalAmount;
+                        visibleRowsCount++;
+                    }
+                });
+            } else {
+                let consolidated = {};
+                
+                activeAgents.forEach(agent => {
+                    if (globalSummary[agent]) {
+                        activeItems.forEach(item => {
+                            if (globalSummary[agent][item]) {
+                                if (!consolidated[item]) {
+                                    consolidated[item] = { qty: 0, amount: 0, simNumbers: [] };
+                                }
+                                consolidated[item].qty += globalSummary[agent][item].qty;
+                                consolidated[item].amount += globalSummary[agent][item].amount;
+                                
+                                if (globalSummary[agent][item].simNumbers) {
+                                    globalSummary[agent][item].simNumbers.forEach(num => {
+                                        if (!consolidated[item].simNumbers.includes(num)) {
+                                            consolidated[item].simNumbers.push(num);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+
+                displayCategories.forEach(category => {
+                    const allConsolidatedItems = Object.keys(consolidated);
+                    const categoryItems = allConsolidatedItems.filter(item => getCategory(item) === category).sort();
+                    
+                    if (categoryItems.length > 0) {
+                        html += `<tr class="category-header">
+                                    <td colspan="3" style="padding-left: 20px;">-- ${category.toUpperCase()} --</td>
+                                 </tr>`;
+                        
+                        categoryItems.forEach(item => {
+                            const data = consolidated[item];
+                            grandTotalQty += data.qty;
+                            grandTotalAmount += data.amount;
+                            visibleRowsCount++;
+
+                            const isRefund = data.qty < 0 || data.amount < 0;
+                            const qtyClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+                            const amountClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+
+                            const hasDetails = (category === "New SIMs" || item === "MNP" || item.includes("FOC")) && data.simNumbers && data.simNumbers.length > 0;
+                            const detailsId = `details-consolidated-${item.replace(/\s+/g, '-')}`;
+
+                            if (hasDetails) {
+                                html += `<tr onclick="toggleDetailsRow('${detailsId}')" class="clickable-row">
+                                            <td style="padding-left: 35px; font-weight: 500;">
+                                                <span id="arrow-${detailsId}" class="expand-arrow">▶</span> ${item}
+                                            </td>
+                                            <td ${qtyClass}>${data.qty}</td>
+                                            <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                         </tr>
+                                         <tr id="${detailsId}" class="details-row" style="display: none;">
+                                            <td colspan="3" class="details-cell">
+                                                <div class="details-container">
+                                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                                        <span class="details-title">SOLD NUMBERS (${data.simNumbers.length}):</span>
+                                                        <button onclick="copyToClipboard('${item.replace(/'/g, "\\'")}:\\n${data.simNumbers.join(', ')}', this, event)" class="btn-copy">
+                                                            <svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                                            </svg>
+                                                            Copy All
+                                                        </button>
+                                                    </div>
+                                                    <div class="badges-wrapper">
+                                                        ${data.simNumbers.map(num => `<span class="number-badge" title="Click to copy" onclick="copyToClipboard('${num}', this, event)">${num}</span>`).join('')}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                         </tr>`;
+                            } else {
+                                html += `<tr>
+                                            <td style="padding-left: 35px;">${item}</td>
+                                            <td ${qtyClass}>${data.qty}</td>
+                                            <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                         </tr>`;
+                            }
+                        });
+                    }
+                });
+            }
+
+            if (visibleRowsCount === 0) {
+                html += `<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 30px;">No records match your selected filters.</td></tr>`;
+            }
+
+            html += `</tbody></table>`;
+            
+            tableWrapper.innerHTML = html;
+            document.getElementById('grand-qty').textContent = grandTotalQty;
+            document.getElementById('grand-total').textContent = grandTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function resetAutomator() {
+            hideAlerts();
+            fileInput.value = '';
+            reportContainer.style.display = 'none';
+            dropZone.style.display = 'flex';
+            document.querySelector('.header-container').style.display = 'block';
+        }
+
+        // Toggle Expandable Details Rows
+        function toggleDetailsRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (!row) return;
+            const arrow = document.getElementById('arrow-' + rowId);
+            
+            if (row.style.display === 'none') {
+                row.style.display = 'table-row';
+                if (arrow) {
+                    arrow.textContent = '▼';
+                    arrow.style.transform = 'rotate(90deg)';
+                }
+            } else {
+                row.style.display = 'none';
+                if (arrow) {
+                    arrow.textContent = '▶';
+                    arrow.style.transform = 'none';
+                }
+            }
+        }
+
+        // Copy Text/Badge contents to Clipboard
+        function copyToClipboard(text, element, event) {
+            if (event) event.stopPropagation();
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = element.innerHTML;
+                const isBadge = element.classList.contains('number-badge');
+                
+                if (isBadge) {
+                    element.textContent = 'Copied!';
+                    element.style.background = 'var(--success)';
+                    element.style.color = '#ffffff';
+                    element.style.borderColor = 'var(--success)';
+                    setTimeout(() => {
+                        element.innerHTML = originalHTML;
+                        element.style.background = '';
+                        element.style.color = '';
+                        element.style.borderColor = '';
+                    }, 1000);
+                } else {
+                    element.innerHTML = `
+                        <svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Copied!
+                    `;
+                    element.classList.add('copied');
+                    setTimeout(() => {
+                        element.innerHTML = originalHTML;
+                        element.classList.remove('copied');
+                    }, 1500);
+                }
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
+        // Light/Dark Theme Switching
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            let newTheme = 'light';
+            if (!currentTheme || currentTheme === 'light') {
+                newTheme = 'dark';
+            }
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeButton(newTheme);
+        }
+
+        // Helper to update theme controls
+        function updateThemeButton(theme) {
+            const btnText = document.getElementById('theme-text');
+            const iconPath = document.getElementById('theme-icon');
+            
+            if (theme === 'dark') {
+                btnText.textContent = 'Light Mode';
+                iconPath.setAttribute('d', 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z');
+            } else {
+                btnText.textContent = 'Dark Mode';
+                iconPath.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z');
+            }
+        }
+
+        // Initialize Theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeButton(savedTheme);
+    </script>
+</body>
+</html>
