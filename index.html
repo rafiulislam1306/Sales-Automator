@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Sales Report Automator</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
-
     
     
     <style>
@@ -58,7 +62,7 @@
         }
 
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: var(--bg-gradient);
             color: var(--text-main);
             min-height: 100vh;
@@ -163,6 +167,119 @@
 
         #file-input {
             display: none;
+        }
+
+        /* Compact Drop Zone (Active Report Mode) */
+        #drop-zone.compact {
+            max-width: 950px;
+            height: 58px;
+            min-height: 58px;
+            padding: 10px 24px;
+            flex-direction: row;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 10px;
+            margin-bottom: 0;
+            border-width: 1.5px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+        #drop-zone.compact.hover {
+            transform: scale(1.008);
+            background: var(--primary-light);
+            border-color: var(--primary-hover);
+            box-shadow: var(--shadow-md);
+        }
+        #drop-zone.compact svg {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        #drop-zone.compact:hover svg {
+            transform: translateY(-2px);
+        }
+        #drop-zone.compact #drop-zone-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        #drop-zone.compact #drop-zone-subtext {
+            display: none;
+        }
+
+        /* Loaded Files Bar & File Chips */
+        .loaded-files-bar {
+            width: 100%;
+            max-width: 950px;
+            margin-top: 10px;
+            margin-bottom: 0;
+            display: none;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--backdrop-blur));
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            animation: fadeIn 0.3s ease;
+        }
+        .loaded-files-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-right: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+        [data-theme="dark"] .file-chip {
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .file-chip-name {
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .file-chip-meta {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+        .file-chip-remove {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 0 4px;
+            margin-left: 2px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+        .file-chip-remove:hover {
+            color: var(--danger);
+            background-color: var(--danger-light);
         }
 
         /* Notification Banner / Alert */
@@ -421,28 +538,81 @@
         .summary-dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            gap: 16px;
             margin-bottom: 25px;
+            width: 100%;
         }
         .summary-card {
-            background: var(--card-bg);
+            background: linear-gradient(135deg, var(--card-bg), rgba(255, 255, 255, 0.4));
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 22px;
             box-shadow: var(--shadow-sm);
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        [data-theme="dark"] .summary-card {
+            background: linear-gradient(135deg, var(--card-bg), rgba(15, 23, 42, 0.3));
+        }
+        .summary-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+        .summary-card-info {
+            display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
         }
         .summary-card-label {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--text-muted);
-            font-weight: 500;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         .summary-card-value {
-            font-size: 1.75rem;
-            font-weight: 700;
+            font-size: 1.85rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-main), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        [data-theme="dark"] .summary-card-value {
+            background: linear-gradient(135deg, var(--text-main), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .summary-card-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary-light);
             color: var(--primary);
+            transition: all 0.3s ease;
+        }
+        .summary-card:hover .summary-card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--primary-light);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Buttons & Footer */
@@ -524,6 +694,62 @@
             flex-wrap: wrap;
             gap: 8px;
         }
+        .ers-breakdown-table {
+            width: 100%;
+            max-width: 450px;
+            margin-top: 6px;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+        .ers-breakdown-table th {
+            background-color: var(--card-border) !important;
+            color: var(--text-main) !important;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .ers-breakdown-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text-main);
+        }
+        .ers-breakdown-table tr:last-child td {
+            border-bottom: none;
+        }
+        .ers-breakdown-table tr:hover {
+            background-color: var(--table-row-hover);
+        }
+        .ers-amount-badge {
+            background: rgba(99, 102, 241, 0.1);
+            color: rgb(99, 102, 241);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 1px 6px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        [data-theme="dark"] .ers-amount-badge {
+            background: rgba(129, 140, 248, 0.15);
+            color: rgb(165, 180, 252);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+        }
+        .ers-amount-badge:hover {
+            background: rgb(99, 102, 241);
+            color: #ffffff;
+            border-color: rgb(99, 102, 241);
+            transform: translateY(-1px);
+        }
+
+
         .number-badge {
             background: var(--primary-light);
             color: var(--primary);
@@ -543,6 +769,155 @@
             border-color: var(--primary);
             background: var(--primary-hover);
             color: #ffffff;
+        }
+        .number-badge.highlighted {
+            background-color: var(--warning) !important;
+            color: #000000 !important;
+            border-color: var(--warning) !important;
+            box-shadow: 0 0 12px var(--warning) !important;
+            transform: scale(1.05) translateY(-1px) !important;
+            font-weight: 700 !important;
+        }
+
+        /* Floating Search Panel Styles */
+        #floating-search-trigger {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #floating-search-trigger:hover {
+            transform: scale(1.1) translateY(-2px);
+            background-color: var(--primary-hover);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+        }
+        #floating-search-trigger svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+        .floating-search-popup {
+            position: fixed;
+            bottom: 96px;
+            right: 30px;
+            width: 320px;
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--backdrop-blur));
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--shadow-lg);
+            z-index: 999;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            animation: popupIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            transform-origin: bottom right;
+        }
+        @keyframes popupIn {
+            from { transform: scale(0.8) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes popupOut {
+            from { transform: scale(1) translateY(0); opacity: 1; }
+            to { transform: scale(0.8) translateY(20px); opacity: 0; }
+        }
+        .floating-search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 8px;
+        }
+        .floating-search-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .floating-search-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+        .floating-search-close:hover {
+            color: var(--text-main);
+        }
+        .floating-search-close svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2.5;
+        }
+        .floating-search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        #search-number {
+            width: 100%;
+            padding: 10px 36px 10px 36px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            transition: all 0.3s ease;
+        }
+        #search-number:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .floating-search-input-wrapper .search-icon {
+            position: absolute;
+            left: 10px;
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        .floating-search-input-wrapper #clear-search {
+            position: absolute;
+            right: 10px;
+            background: transparent;
+            border: none;
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            padding: 0;
+        }
+        .floating-search-input-wrapper #clear-search:hover {
+            color: var(--text-main);
+            background: var(--table-row-hover);
         }
         .btn-copy {
             background: var(--card-bg);
@@ -570,6 +945,45 @@
             border-color: var(--success);
         }
 
+        /* Toast Notification Styling */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+        }
+        .toast {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1), toastOut 0.3s ease 2.7s forwards;
+        }
+        [data-theme="light"] .toast {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e293b;
+            border: 1px solid var(--card-border);
+        }
+        @keyframes toastIn {
+            from { transform: translateY(20px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes toastOut {
+            from { transform: translateY(0) scale(1); opacity: 1; }
+            to { transform: translateY(10px) scale(0.95); opacity: 0; }
+        }
+
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -589,7 +1003,12 @@
             }
             #theme-toggle,
             #drop-zone,
+            .loaded-files-bar,
             #filter-container,
+            .search-filter-panel,
+            .search-container,
+            #floating-search-trigger,
+            #floating-search-popup,
             .view-mode-selector,
             .action-bar,
             .alert-warning {
@@ -632,9 +1051,82 @@
             .details-row {
                 display: table-row !important;
             }
-            .expand-arrow, .btn-copy {
+            .expand-arrow, .btn-copy, .toast-container {
                 display: none !important;
             }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-color);
+            font-size: 1.25rem;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .mapping-row {
+            background: var(--bg-color);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .mapping-row h4 {
+            margin: 0 0 10px 0;
+            color: var(--primary);
+            font-family: monospace;
+            font-size: 0.95rem;
+            word-break: break-all;
+        }
+        .mapping-controls {
+            display: flex;
+            gap: 12px;
+        }
+        .mapping-controls select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -666,10 +1158,19 @@
             <polyline points="17 8 12 3 7 8"/>
             <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <div id="drop-zone-text">Drag & Drop your CSV file here</div>
+        <div id="drop-zone-text">Drag & Drop your CSV or Excel (.xlsx) file here</div>
         <div id="drop-zone-subtext">or click to browse your computer</div>
     </div>
-    <input type="file" id="file-input" accept=".csv">
+    <input type="file" id="file-input" accept=".csv, .xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv" multiple>
+
+    <!-- Loaded Files Bar Container -->
+    <div id="loaded-files-bar" class="loaded-files-bar" style="display: none;"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; margin: 40px auto; min-height: 200px;">
+        <div class="spinner"></div>
+        <div style="font-weight: 600; color: var(--primary); font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase;">Processing Report Data...</div>
+    </div>
 
     <!-- Report Container -->
     <div id="report-container">
@@ -681,6 +1182,60 @@
                 Date: <span id="report-date"></span>
             </div>
         </div>
+
+        <!-- KPI Metrics Dashboard -->
+        <div class="summary-dashboard">
+            <div class="summary-card">
+                <div class="summary-card-info">
+                    <span class="summary-card-label">Powerload</span>
+                    <span class="summary-card-value" id="grand-powerload">0.00</span>
+                </div>
+                <div class="summary-card-icon">
+                    <svg style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-info">
+                    <span class="summary-card-label">Gross Revenue</span>
+                    <span class="summary-card-value" id="grand-total">0.00</span>
+                </div>
+                <div class="summary-card-icon">
+                    <svg style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-info">
+                    <span class="summary-card-label">ERS Recharges</span>
+                    <span class="summary-card-value" id="grand-ers">0.00</span>
+                </div>
+                <div class="summary-card-icon">
+                    <svg style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-info">
+                    <span class="summary-card-label">SIMs Sold</span>
+                    <span class="summary-card-value" id="grand-sims">0</span>
+                </div>
+                <div class="summary-card-icon">
+                    <svg style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="16" rx="2" ry="2"/>
+                        <line x1="7" y1="8" x2="17" y2="8"/>
+                        <line x1="7" y1="12" x2="17" y2="12"/>
+                        <line x1="7" y1="16" x2="13" y2="16"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+
 
         <!-- Filter Collapse Container -->
         <details id="filter-container">
@@ -706,8 +1261,29 @@
                     </div>
                     <div id="item-filters" class="checkbox-grid"></div>
                 </div>
+                <div id="ers-category-filter-group" style="display: none;">
+                    <div class="filter-group-header">
+                        <span class="filter-title">Filter ERS by Category:</span>
+                        <div class="filter-links">
+                            <span onclick="toggleFilters('ers-category', true)">Select All</span> &nbsp;|&nbsp; 
+                            <span onclick="toggleFilters('ers-category', false)">Clear All</span>
+                        </div>
+                    </div>
+                    <div id="ers-category-filters" class="checkbox-grid"></div>
+                </div>
+                <div id="ers-amount-filter-group" style="display: none;">
+                    <div class="filter-group-header">
+                        <span class="filter-title">Filter ERS by Amount:</span>
+                        <div class="filter-links">
+                            <span onclick="toggleFilters('ers-amount', true)">Select All</span> &nbsp;|&nbsp; 
+                            <span onclick="toggleFilters('ers-amount', false)">Clear All</span>
+                        </div>
+                    </div>
+                    <div id="ers-amount-filters" class="checkbox-grid"></div>
+                </div>
             </div>
         </details>
+
 
         <!-- View Selector -->
         <div class="view-mode-selector">
@@ -720,29 +1296,36 @@
             <div id="table-wrapper"></div>
         </div>
 
-        <!-- KPI Metrics Dashboard -->
-        <div class="summary-dashboard">
-            <div class="summary-card">
-                <span class="summary-card-label">Total Net Quantity Sold</span>
-                <span class="summary-card-value" id="grand-qty">0</span>
-            </div>
-            <div class="summary-card">
-                <span class="summary-card-label">Total Gross Revenue</span>
-                <span class="summary-card-value" id="grand-total">0.00</span>
-            </div>
-        </div>
-
         <!-- Action Buttons -->
         <div class="action-bar">
-            <button class="btn btn-secondary" onclick="resetAutomator()">Upload Another File</button>
-            <button class="btn" onclick="window.print()">
-                <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"/>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                    <rect x="6" y="14" width="12" height="8"/>
-                </svg>
-                Print / Save as PDF
-            </button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()" id="btn-add-more">
+                    <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    + Add More CSVs
+                </button>
+                <button class="btn btn-secondary" onclick="resetAutomator()">Reset</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="exportConsolidatedToCSV()">
+                    <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export CSV
+                </button>
+                <button class="btn" onclick="window.print()">
+                    <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"/>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    Print / Save as PDF
+                </button>
+            </div>
         </div>
     </div>
 
@@ -762,11 +1345,64 @@
         let uniqueAgents = new Set();
         let unmappedReportItems = new Set();
         let activeViewMode = 'agent';
+        let uniqueErsAmounts = new Set();
+        let uniqueErsCategories = new Set();
+        let consolidated = {};
+        let loadedFiles = [];
+        
+        let userProductMapping = JSON.parse(localStorage.getItem('userProductMapping') || '{}');
+        let lastParsedRows = [];
+        let lastParsedHeaders = [];
+        let numberSearchQuery = '';
 
-        const displayCategories = ["New SIMs", "Replacements", "Services", "FOC Items", "Other / Handsets"];
+        const powerloadAmounts = new Set([
+            19, 29, 39, 49, 59, 79, 99, 109, 119, 129, 149, 169, 179, 194, 198, 199,
+            209, 229, 239, 249, 259, 269, 279, 297, 298, 299, 308, 319, 349, 398, 399,
+            419, 449, 479, 497, 498, 499, 539, 549, 597, 598, 599, 609, 649, 698, 699,
+            749, 798, 799, 818, 834, 849, 898, 899, 949, 972, 988, 994, 998, 999, 1049,
+            1099, 1149, 1199, 1493, 1494, 1497, 1599, 1649, 1699, 1988, 1999, 2084,
+            2149, 2499, 2779, 2899, 2997, 2999, 3057, 4169, 4447, 5999
+        ]);
+
+        const displayCategories = ["Sims & Kits", "Services & FOC", "Other / Handsets"];
 
         // Expanded Product Mappings
         const productMapping = {
+            // Canonical self-identity mappings (prevent standard catalog items from raising unmapped warnings)
+            "No. 1 Plan": "No. 1 Plan",
+            "Prime": "Prime",
+            "Djuice": "Djuice",
+            "Skitto": "Skitto",
+            "Power Prime": "Power Prime",
+            "Recycle SIM": "Recycle SIM",
+            "eSIM Prepaid": "eSIM Prepaid",
+            "eSIM Postpaid": "eSIM Postpaid",
+            "eSIM Skitto": "eSIM Skitto",
+            "Regular Kit": "Regular Kit",
+            "Skitto Kit": "Skitto Kit",
+            "eSIM Kit": "eSIM Kit",
+            "eSIM Skitto Kit": "eSIM Skitto Kit",
+            "ERS": "ERS",
+            "Deactivation": "Deactivation",
+            "Death ToF": "Death ToF",
+            "MNP": "MNP",
+            "Ownership Transfer": "Ownership Transfer",
+            "Recycle SIM Re-issue": "Recycle SIM Re-issue",
+            "FOC Regular": "FOC Regular",
+            "FOC eSIM": "FOC eSIM",
+            "FOC Govt. Regular": "FOC Govt. Regular",
+            "FOC Govt. eSIM": "FOC Govt. eSIM",
+            "Itemized Bill": "Itemized Bill",
+            "Biometric Check": "Biometric Check",
+            "SIM Verification": "SIM Verification",
+            "Prepaid Balance Refund": "Prepaid Balance Refund",
+            "Postpaid Balance Refund": "Postpaid Balance Refund",
+            "Local Advance Refund": "Local Advance Refund",
+            "Security Deposit Refund": "Security Deposit Refund",
+            "Alo CC Camera": "Alo CC Camera",
+            "ZTE F30 Pro SF": "ZTE F30 Pro SF",
+
+            // Legacy & updated system item descriptions
             "djuice": "Djuice",
             "Djuice_Bundle": "Djuice",
             "Grameenphone Prepaid": "Djuice",
@@ -787,84 +1423,241 @@
             "eSIM NISHCHINTO_Bundle": "eSIM Prepaid",
             "eSIM SKITTO": "eSIM Skitto",
             "eSIM SKITTO_Bundle": "eSIM Skitto",
-            "Pre - 041": "Regular Replacement Kit",
-            "TINTIN-PRE-097": "Skitto Replacement Kit",
-            "eREPLACEMENT PRE/POST": "eSIM Replacement Kit",
-            "eREPLACEMENT SKITTO": "eSIM Skitto Replacement Kit",
+            "Pre - 041": "Regular Kit",
+            "PRE - 041": "Regular Kit",
+            "PRE-041": "Regular Kit",
+            "PRE -041": "Regular Kit",
+            "PRE- 041": "Regular Kit",
+            "PRE_041": "Regular Kit",
+            "PRE 041": "Regular Kit",
+            "Pre-041": "Regular Kit",
+            "Pre -041": "Regular Kit",
+            "Pre- 041": "Regular Kit",
+            "POST - 041": "Regular Kit",
+            "POST-041": "Regular Kit",
+            "POST -041": "Regular Kit",
+            "POST- 041": "Regular Kit",
+            "Post - 041": "Regular Kit",
+            "Post-041": "Regular Kit",
+            "Post -041": "Regular Kit",
+            "Post- 041": "Regular Kit",
+            "TINTIN-PRE-097": "Skitto Kit",
+            "TINTIN - PRE - 097": "Skitto Kit",
+            "TINTIN PRE 097": "Skitto Kit",
+            "eREPLACEMENT PRE/POST": "eSIM Kit",
+            "eREPLACEMENT PRE / POST": "eSIM Kit",
+            "eREPLACEMENT PRE-POST": "eSIM Kit",
+            "eREPLACEMENT SKITTO": "eSIM Skitto Kit",
             "Flexi Load": "ERS",
+            "FLEXILOAD": "ERS",
+            "Flexiload": "ERS",
+            "FLEXI LOAD": "ERS",
             "Itemized Bill - Pre": "Itemized Bill",
+            "Itemized Bill - Post": "Itemized Bill",
+            "Itemized Bill": "Itemized Bill",
             "Reactivation": "Recycle SIM Re-issue",
             "SERVICE CHARGE FOR MNP SERVICE": "MNP",
+            "MNP Service": "MNP",
             "TOF Death Case": "Death ToF",
             "TOF Indv To Indv": "Ownership Transfer",
             "40132640_Alo CC Camera A3A": "Alo CC Camera",
+            "10537896_Alo CC Camera A4A": "Alo CC Camera",
+            "Alo CC Camera A4A": "Alo CC Camera",
+            "Alo CC Camera A3A": "Alo CC Camera",
+            "Alo Camera": "Alo CC Camera",
+            "Alo Camera A3A": "Alo CC Camera",
+            "Alo Camera A4A": "Alo CC Camera",
+            "Camera Accessories": "Alo CC Camera",
+            "Camera Accessory": "Alo CC Camera",
+            "IoT Camera": "Alo CC Camera",
+            "IOT Camera": "Alo CC Camera",
             "Biometric Status Check": "Biometric Check",
-            "Deactivation": "Deactivation",
             "Sim Verification": "SIM Verification",
             
             // Newly mapped entries from validation
             "Prepaid Current Balance Refund": "Prepaid Balance Refund",
+            "Postpaid Current Balance Refund": "Postpaid Balance Refund",
             "Local Advance Refund": "Local Advance Refund",
+            "Advance Refund": "Local Advance Refund",
             "21015902_ZTE_F30 Pro_SF": "ZTE F30 Pro SF"
         };
 
+        const categorySims = ["Djuice", "Skitto", "Prime", "No. 1 Plan", "Power Prime", "Recycle SIM", "eSIM Prepaid", "eSIM Postpaid", "eSIM Skitto"];
+        const categoryKits = ["Regular Kit", "Skitto Kit", "eSIM Kit", "eSIM Skitto Kit"];
+        const categoryServices = [
+            "ERS", "Deactivation", "Death ToF", "MNP", "Ownership Transfer", 
+            "Recycle SIM Re-issue", "FOC Regular", "FOC eSIM", "FOC Govt. Regular", 
+            "FOC Govt. eSIM", "Itemized Bill", "Biometric Check", "SIM Verification",
+            "Prepaid Balance Refund", "Local Advance Refund", "Postpaid Balance Refund", "Security Deposit Refund"
+        ];
+
         function getCategory(itemName) {
-            const sims = ["Djuice", "Skitto", "Prime", "No. 1 Plan", "Power Prime", "eSIM Postpaid", "eSIM Prepaid", "eSIM Skitto", "Recycle SIM", "Recycled SIM"];
-            const services = [
-                "ERS", "Itemized Bill", "Recycle SIM Re-issue", "MNP", "Death ToF", 
-                "Ownership Transfer", "Biometric Check", "Deactivation", "SIM Verification",
-                "Prepaid Balance Refund", "Local Advance Refund"
-            ];
-            
-            if (sims.includes(itemName)) return "New SIMs";
-            if (itemName.includes("Kit") || itemName.includes("Replacement")) return "Replacements";
-            if (services.includes(itemName)) return "Services";
-            if (itemName.includes("FOC")) return "FOC Items";
+            if (categorySims.includes(itemName) || categoryKits.includes(itemName)) return "Sims & Kits";
+            if (categoryServices.includes(itemName) || itemName.includes("FOC") || itemName.toLowerCase().includes("refund")) return "Services & FOC";
             return "Other / Handsets";
         }
 
-        // Robust CSV Parser (RFC 4180 compliant)
-        function parseCSV(text) {
-            const result = [];
-            let row = [];
-            let col = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const next = text[i+1];
-                
-                if (char === '"') {
-                    if (inQuotes && next === '"') {
-                        col += '"';
-                        i++; // skip escaped quote
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (char === ',' && !inQuotes) {
-                    row.push(col);
-                    col = '';
-                } else if ((char === '\r' || char === '\n') && !inQuotes) {
-                    if (char === '\r' && next === '\n') {
-                        i++;
-                    }
-                    row.push(col);
-                    result.push(row);
-                    row = [];
-                    col = '';
-                } else {
-                    col += char;
-                }
+        const customSortOrder = [
+            "No. 1 Plan",
+            "Prime",
+            "Djuice",
+            "Skitto",
+            "Power Prime",
+            "Recycle SIM",
+            "eSIM Prepaid",
+            "eSIM Postpaid",
+            "eSIM Skitto",
+            "Regular Kit",
+            "Skitto Kit",
+            "eSIM Kit",
+            "eSIM Skitto Kit",
+            "ERS",
+            "Deactivation",
+            "Death ToF",
+            "MNP",
+            "Ownership Transfer",
+            "Recycle SIM Re-issue",
+            "FOC Regular",
+            "FOC eSIM",
+            "FOC Govt. Regular",
+            "FOC Govt. eSIM",
+            "Itemized Bill",
+            "Biometric Check",
+            "SIM Verification",
+            "Prepaid Balance Refund",
+            "Local Advance Refund",
+            "Postpaid Balance Refund",
+            "Security Deposit Refund",
+            "Alo CC Camera",
+            "ZTE F30 Pro SF"
+        ];
+
+        function compareItems(a, b) {
+            let idxA = customSortOrder.indexOf(a);
+            let idxB = customSortOrder.indexOf(b);
+
+            if (idxA === -1 && a.endsWith(" FOC")) {
+                const parentIdx = customSortOrder.indexOf(a.replace(" FOC", ""));
+                if (parentIdx !== -1) idxA = parentIdx + 0.5;
             }
-            if (col !== '' || row.length > 0) {
+            if (idxB === -1 && b.endsWith(" FOC")) {
+                const parentIdx = customSortOrder.indexOf(b.replace(" FOC", ""));
+                if (parentIdx !== -1) idxB = parentIdx + 0.5;
+            }
+
+            if (idxA === -1) idxA = 999;
+            if (idxB === -1) idxB = 999;
+            if (idxA !== idxB) return idxA - idxB;
+            return a.localeCompare(b);
+        }
+
+        const agentSortOrder = ["rafi", "wahid", "shovon", "anjam", "rakiba", "asha", "sumon"];
+
+        function compareAgents(a, b) {
+            const aLower = a.toLowerCase();
+            const bLower = b.toLowerCase();
+
+            let idxA = agentSortOrder.indexOf(aLower);
+            let idxB = agentSortOrder.indexOf(bLower);
+
+            if (idxA === -1) idxA = 999;
+            if (idxB === -1) idxB = 999;
+
+            if (idxA !== idxB) return idxA - idxB;
+            return a.localeCompare(b);
+        }
+
+        // Helper: Normalize date strings (ISO, space-separated timestamps, DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY)
+        function normalizeDateStr(raw) {
+            if (!raw) return '';
+            const trimmed = String(raw).replace(/['"]/g, '').trim();
+            // 1. YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
+            let m = trimmed.match(/^(\d{4})[-/. ](\d{1,2})[-/. ](\d{1,2})/);
+            if (m) {
+                return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+            }
+            // 2. DD-MM-YYYY or DD/MM/YYYY or DD.MM.YYYY
+            m = trimmed.match(/^(\d{1,2})[-/. ](\d{1,2})[-/. ](\d{4})/);
+            if (m) {
+                return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+            }
+            // 3. Fallback: split by space or 'T' and take the date portion
+            const datePart = trimmed.split(/[\sT]/)[0];
+            return datePart || trimmed;
+        }
+
+        // Helper: Escape HTML to prevent XSS
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // Helper: Debounce function for smooth search typing
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const debouncedGenerateTable = debounce(() => generateTable(), 300);
+
+        // Highly Optimized RFC 4180 compliant CSV Parser
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/);
+            const result = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // Fast path for lines without quotes (99% of data lines)
+                if (!line.includes('"')) {
+                    result.push(line.split(','));
+                    continue;
+                }
+                
+                // Fallback character scan parser for lines containing quotes
+                const row = [];
+                let col = '';
+                let inQuotes = false;
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        if (inQuotes && line[j+1] === '"') {
+                            col += '"';
+                            j++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(col);
+                        col = '';
+                    } else {
+                        col += char;
+                    }
+                }
                 row.push(col);
                 result.push(row);
             }
             return result;
         }
 
-        // Initialize drag-drop event listeners
+        // Initialize drag-drop event listeners & prevent accidental drops on window
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            window.addEventListener(eventName, preventDefaults, false);
             dropZone.addEventListener(eventName, preventDefaults, false);
         });
 
@@ -882,221 +1675,850 @@
         });
 
         dropZone.addEventListener('drop', handleDrop, false);
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files), false);
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+            fileInput.value = '';
+        }, false);
 
         function handleDrop(e) {
             const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
+            const files = dt ? dt.files : null;
+            if (files && files.length > 0) {
+                handleFiles(files);
+            }
         }
 
-        function handleFiles(files) {
-            if (files.length === 0) return;
-            const file = files[0];
-            
-            if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-                showUIError('Error: Please upload a valid CSV file.');
-                return;
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => reject(new Error(`Failed to read file "${file.name}".`));
+                reader.readAsText(file);
+            });
+        }
+
+        async function handleFiles(files) {
+            if (!files || files.length === 0) return;
+            const fileArray = Array.from(files);
+
+            if (fileInput) fileInput.value = '';
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+            const warnings = [];
+            const newValidFiles = [];
+
+            for (const file of fileArray) {
+                // 1. File extension and MIME validation
+                const isXlsx = Boolean(file.name && file.name.toLowerCase().endsWith('.xlsx'));
+                const isCsv = Boolean((file.name && file.name.toLowerCase().endsWith('.csv')) ||
+                              file.type === 'text/csv' ||
+                              file.type === 'application/vnd.ms-excel');
+                if (!isCsv && !isXlsx) {
+                    warnings.push(`"${file.name}": Skipped (Not a supported file. Please upload a .csv or .xlsx file).`);
+                    continue;
+                }
+
+                // 2. Duplicate detection against already loaded and current batch files
+                const isDuplicateLoaded = loadedFiles.some(f => f.name === file.name && f.size === file.size);
+                const isDuplicateBatch = newValidFiles.some(f => f.name === file.name && f.size === file.size);
+                if (isDuplicateLoaded || isDuplicateBatch) {
+                    warnings.push(`"${file.name}": Skipped duplicate file (already loaded).`);
+                    continue;
+                }
+
+                // 3. Read file text asynchronously (or convert Excel to CSV)
+                let rawText = '';
+                if (isXlsx) {
+                    if (typeof XLSX === 'undefined') {
+                        warnings.push(`"${file.name}": Excel (.xlsx) parser is not loaded. Please ensure you are connected to the internet to load the Excel reader, or save as .csv in Excel.`);
+                        continue;
+                    }
+                    try {
+                        const buffer = await file.arrayBuffer();
+                        const workbook = XLSX.read(buffer, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        rawText = XLSX.utils.sheet_to_csv(worksheet);
+                    } catch (err) {
+                        warnings.push(`"${file.name}": Error reading Excel file (${err.message}).`);
+                        continue;
+                    }
+                } else {
+                    try {
+                        rawText = await readFileAsText(file);
+                    } catch (err) {
+                        warnings.push(`"${file.name}": Read error (${err.message}).`);
+                        continue;
+                    }
+                }
+
+                // 4. Strip Excel UTF-8 Byte Order Mark (BOM)
+                rawText = rawText.replace(/^\uFEFF/, '');
+                if (!rawText.trim()) {
+                    warnings.push(`"${file.name}": Skipped (File is empty).`);
+                    continue;
+                }
+
+                // 5. Parse CSV
+                const rows = parseCSV(rawText);
+                if (!rows || rows.length === 0) {
+                    warnings.push(`"${file.name}": Skipped (No valid CSV rows found).`);
+                    continue;
+                }
+
+                // 6. Header row detection (locate TRANSACTION_DATE and verify candidate has column headers)
+                function isTransactionDateHeader(cell) {
+                    if (typeof cell !== 'string') return false;
+                    const clean = cell.trim().toUpperCase().replace(/[\s_.\-]+/g, '_');
+                    return clean === 'TRANSACTION_DATE' || clean === 'TRANS_DATE' || clean === 'TXN_DATE' || clean === 'TRX_DATE' || clean === 'DATE';
+                }
+
+                function findColIndex(hdrs, ...names) {
+                    const targets = names.map(n => n.toUpperCase().replace(/[\s_]+/g, '_').trim());
+                    return hdrs.findIndex(h => {
+                        if (typeof h !== 'string') return false;
+                        const normH = h.toUpperCase().replace(/[\s_]+/g, '_').trim();
+                        return targets.includes(normH);
+                    });
+                }
+
+                let headers = null;
+                let dataStartIndex = 0;
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row && row.length > 0 && row.some(isTransactionDateHeader)) {
+                        const candidate = row.map(h => (typeof h === 'string' ? h.trim() : h));
+                        const hasEmp = findColIndex(candidate, 'EMP_ID', 'EMPLOYEE_ID', 'EMP ID', 'EMPLOYEE ID', 'EMPID') !== -1;
+                        const hasAmtOrQty = findColIndex(candidate, 'GROSS_AMOUNT', 'AMOUNT', 'GROSS AMOUNT', 'TOTAL_AMOUNT', 'TOTAL AMOUNT', 'GROSS') !== -1 || findColIndex(candidate, 'QUANTITY', 'QTY', 'QUANTITY_SOLD', 'QTY_SOLD') !== -1;
+                        const hasItem = findColIndex(candidate, 'ITEM_DESCRIPTION', 'ITEM_DESC', 'PRODUCT_NAME', 'ITEM_NAME', 'ITEM NAME', 'ITEM DESCRIPTION', 'PRODUCT', 'ITEM') !== -1;
+                        if (hasEmp && (hasAmtOrQty || hasItem)) {
+                            headers = candidate;
+                            dataStartIndex = i + 1;
+                            break;
+                        }
+                    }
+                }
+                // Fallback: if no multi-column header row matched, try first row with TRANSACTION_DATE
+                if (!headers) {
+                    for (let i = 0; i < rows.length; i++) {
+                        if (rows[i] && rows[i].length > 0 && rows[i].some(isTransactionDateHeader)) {
+                            headers = rows[i].map(h => (typeof h === 'string' ? h.trim() : h));
+                            dataStartIndex = i + 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (!headers) {
+                    warnings.push(`"${file.name}": Missing TRANSACTION_DATE header row.`);
+                    continue;
+                }
+
+                // 7. Mandatory column verification & flexible column index resolution
+                const empIdx = findColIndex(headers, 'EMP_ID', 'EMPLOYEE_ID', 'EMP ID', 'EMPLOYEE ID', 'EMPID');
+                const itemIdx = findColIndex(headers, 'ITEM_DESCRIPTION', 'ITEM_DESC', 'PRODUCT_NAME', 'ITEM_NAME', 'ITEM NAME', 'ITEM DESCRIPTION', 'PRODUCT', 'ITEM');
+                const qtyIdx = findColIndex(headers, 'QUANTITY', 'QTY', 'QUANTITY_SOLD', 'QTY_SOLD');
+                const amountIdx = findColIndex(headers, 'GROSS_AMOUNT', 'AMOUNT', 'GROSS AMOUNT', 'TOTAL_AMOUNT', 'TOTAL AMOUNT', 'GROSS');
+                const essential = { 'EMP_ID': empIdx, 'ITEM_DESCRIPTION': itemIdx, 'QUANTITY': qtyIdx, 'GROSS_AMOUNT': amountIdx };
+                const missing = Object.keys(essential).filter(k => essential[k] === -1);
+                if (missing.length > 0) {
+                    warnings.push(`"${file.name}": Missing mandatory column(s): ${missing.join(', ')}.`);
+                    continue;
+                }
+
+                // 8. Optional column indices
+                const dateIdx = findColIndex(headers, 'TRANSACTION_DATE', 'TRANSACTION DATE', 'DATE', 'TRANS_DATE', 'TXN_DATE', 'TRX_DATE');
+                const focIdx = findColIndex(headers, 'FOC_REASON', 'FOC REASON', 'FOC');
+                const unitPriceIdx = findColIndex(headers, 'UNIT_PRICE', 'UNIT PRICE', 'PRICE');
+                const catCodeIdx = findColIndex(headers, 'ITEM_CATEGORY_CODE', 'ITEM CATEGORY CODE', 'CATEGORY_CODE', 'CATEGORY CODE', 'CATEGORY', 'ITEM_CATEGORY', 'CATEGORY_NAME', 'SUB_CATEGORY', 'SUBCATEGORY');
+                const msisdnIdx = findColIndex(headers, 'MSISDN_IMEI', 'MSISDN IMEI', 'MSISDN', 'IMEI', 'SERVICE_NUMBER');
+                const custMsisdnIdx = findColIndex(headers, 'CUSTOMER_MSISDN', 'CUSTOMER MSISDN', 'CUST_MSISDN', 'CUSTOMER_NUMBER', 'CUST_NUMBER', 'CUSTOMER NUMBER');
+                const txnTypeIdx = findColIndex(headers, 'TRANSACTION_TYPE', 'TRANSACTION TYPE', 'TXN_TYPE', 'TXN TYPE', 'TYPE');
+                const productGroupIdx = findColIndex(headers, 'PRODUCT_GROUP', 'PRODUCT GROUP', 'PROD_GROUP');
+
+                // 9. Pre-filter valid transaction data rows
+                const records = [];
+                const fileDates = new Set();
+                for (let i = dataStartIndex; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0 || row.join('').trim() === '') continue;
+                    if (row.length <= Math.max(empIdx, itemIdx, qtyIdx, amountIdx)) continue;
+
+                    const rawAgent = row[empIdx] ? row[empIdx].trim() : '';
+                    if (!rawAgent || rawAgent.toLowerCase().includes('total') || rawAgent.toLowerCase().includes('report')) continue;
+
+                    records.push(row);
+                    if (dateIdx !== -1 && row[dateIdx] && row[dateIdx].trim()) {
+                        const normDate = normalizeDateStr(row[dateIdx]);
+                        if (normDate) fileDates.add(normDate);
+                    }
+                }
+
+                const sortedFileDates = Array.from(fileDates).sort();
+                const primaryDate = sortedFileDates.length > 0 ? sortedFileDates[0] : 'Date not found';
+
+                // 10. Construct file object
+                const fileObj = {
+                    id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+                    name: file.name,
+                    size: file.size,
+                    rawText: rawText,
+                    headers: headers,
+                    indices: { empIdx, itemIdx, qtyIdx, amountIdx, dateIdx, focIdx, unitPriceIdx, catCodeIdx, msisdnIdx, custMsisdnIdx, txnTypeIdx, productGroupIdx },
+                    records: records,
+                    date: primaryDate,
+                    dates: sortedFileDates,
+                    rowCount: records.length
+                };
+                newValidFiles.push(fileObj);
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                processCSV(text);
-            };
-            reader.onerror = function() {
-                showUIError('Error: Failed to read file.');
-            };
-            reader.readAsText(file);
+            // 11. Append new valid files to loadedFiles
+            if (newValidFiles.length > 0) {
+                loadedFiles.push(...newValidFiles);
+            }
+
+            // 12. Non-blocking error handling
+            if (warnings.length > 0) {
+                if (loadedFiles.length > 0) {
+                    showUIWarning(`Notice:\n${warnings.join('\n')}`);
+                } else {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    resetDropZoneToLanding();
+                    showUIError(`Upload Failed:\n${warnings.join('\n')}`);
+                    return;
+                }
+            }
+
+            // 13. Rebuild report across all loaded files
+            if (loadedFiles.length > 0) {
+                rebuildReport();
+            } else {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                resetDropZoneToLanding();
+            }
         }
 
         function showUIError(message) {
             alertIcon.textContent = '❌';
             alertBox.className = 'alert alert-error';
-            alertContent.textContent = message;
+            alertContent.innerHTML = `<div>${escapeHTML(message).replace(/\n/g, '<br>')}</div>`;
             alertBox.style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function processCSV(csvText) {
-            hideAlerts();
-            const rows = parseCSV(csvText);
-            let headers = [];
-            let dataStartIndex = 0;
+        function showUIWarning(message) {
+            alertIcon.textContent = '⚠️';
+            alertBox.className = 'alert alert-warning';
+            alertContent.innerHTML = `<div>${escapeHTML(message).replace(/\n/g, '<br>')}</div>`;
+            alertBox.style.display = 'flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-            // Find start of transaction data
+        let currentCSVText = '';
+
+        function processCSV(csvText) {
+            const cleanText = csvText.replace(/^\uFEFF/, '');
+            const rows = parseCSV(cleanText);
+            function isTransactionDateHeader(cell) {
+                if (typeof cell !== 'string') return false;
+                const clean = cell.trim().toUpperCase().replace(/[\s_.\-]+/g, '_');
+                return clean === 'TRANSACTION_DATE' || clean === 'TRANS_DATE' || clean === 'TXN_DATE' || clean === 'TRX_DATE' || clean === 'DATE';
+            }
+
+            function findColIndex(hdrs, ...names) {
+                const targets = names.map(n => n.toUpperCase().replace(/[\s_]+/g, '_').trim());
+                return hdrs.findIndex(h => {
+                    if (typeof h !== 'string') return false;
+                    const normH = h.toUpperCase().replace(/[\s_]+/g, '_').trim();
+                    return targets.includes(normH);
+                });
+            }
+
+            let headers = null;
+            let dataStartIndex = 0;
             for (let i = 0; i < rows.length; i++) {
-                if (rows[i].length > 0 && rows[i][0] === 'TRANSACTION_DATE') {
-                    headers = rows[i];
-                    dataStartIndex = i + 1;
-                    break;
+                const row = rows[i];
+                if (row && row.length > 0 && row.some(isTransactionDateHeader)) {
+                    const candidate = row.map(h => (typeof h === 'string' ? h.trim() : h));
+                    const hasEmp = findColIndex(candidate, 'EMP_ID', 'EMPLOYEE_ID', 'EMP ID', 'EMPLOYEE ID', 'EMPID') !== -1;
+                    const hasAmtOrQty = findColIndex(candidate, 'GROSS_AMOUNT', 'AMOUNT', 'GROSS AMOUNT', 'TOTAL_AMOUNT', 'TOTAL AMOUNT', 'GROSS') !== -1 || findColIndex(candidate, 'QUANTITY', 'QTY', 'QUANTITY_SOLD', 'QTY_SOLD') !== -1;
+                    const hasItem = findColIndex(candidate, 'ITEM_DESCRIPTION', 'ITEM_DESC', 'PRODUCT_NAME', 'ITEM_NAME', 'ITEM NAME', 'ITEM DESCRIPTION', 'PRODUCT', 'ITEM') !== -1;
+                    if (hasEmp && (hasAmtOrQty || hasItem)) {
+                        headers = candidate;
+                        dataStartIndex = i + 1;
+                        break;
+                    }
+                }
+            }
+            if (!headers) {
+                for (let i = 0; i < rows.length; i++) {
+                    if (rows[i] && rows[i].length > 0 && rows[i].some(isTransactionDateHeader)) {
+                        headers = rows[i].map(h => (typeof h === 'string' ? h.trim() : h));
+                        dataStartIndex = i + 1;
+                        break;
+                    }
                 }
             }
 
-            if (headers.length === 0) {
+            if (!headers) {
                 showUIError('Invalid CSV Format: Could not find the transaction headers. Ensure columns start with TRANSACTION_DATE.');
                 return;
             }
 
-            // Safe header mappings
-            const dateIdx = headers.indexOf('TRANSACTION_DATE');
-            const empIdx = headers.indexOf('EMP_ID');
-            const itemIdx = headers.indexOf('ITEM_DESCRIPTION');
-            const qtyIdx = headers.indexOf('QUANTITY');
-            const amountIdx = headers.indexOf('GROSS_AMOUNT');
-            const focIdx = headers.indexOf('FOC_REASON');
-            const unitPriceIdx = headers.indexOf('UNIT_PRICE');
+            const empIdx = findColIndex(headers, 'EMP_ID', 'EMPLOYEE_ID', 'EMP ID', 'EMPLOYEE ID', 'EMPID');
+            const itemIdx = findColIndex(headers, 'ITEM_DESCRIPTION', 'ITEM_DESC', 'PRODUCT_NAME', 'ITEM_NAME', 'ITEM NAME', 'ITEM DESCRIPTION', 'PRODUCT', 'ITEM');
+            const qtyIdx = findColIndex(headers, 'QUANTITY', 'QTY', 'QUANTITY_SOLD', 'QTY_SOLD');
+            const amountIdx = findColIndex(headers, 'GROSS_AMOUNT', 'AMOUNT', 'GROSS AMOUNT', 'TOTAL_AMOUNT', 'TOTAL AMOUNT', 'GROSS');
+            const dateIdx = findColIndex(headers, 'TRANSACTION_DATE', 'TRANSACTION DATE', 'DATE', 'TRANS_DATE', 'TXN_DATE', 'TRX_DATE');
+            const focIdx = findColIndex(headers, 'FOC_REASON', 'FOC REASON', 'FOC');
+            const unitPriceIdx = findColIndex(headers, 'UNIT_PRICE', 'UNIT PRICE', 'PRICE');
+            const catCodeIdx = findColIndex(headers, 'ITEM_CATEGORY_CODE', 'ITEM CATEGORY CODE', 'CATEGORY_CODE', 'CATEGORY CODE', 'CATEGORY', 'ITEM_CATEGORY', 'CATEGORY_NAME', 'SUB_CATEGORY', 'SUBCATEGORY');
+            const msisdnIdx = findColIndex(headers, 'MSISDN_IMEI', 'MSISDN IMEI', 'MSISDN', 'IMEI', 'SERVICE_NUMBER');
+            const custMsisdnIdx = findColIndex(headers, 'CUSTOMER_MSISDN', 'CUSTOMER MSISDN', 'CUST_MSISDN', 'CUSTOMER_NUMBER', 'CUST_NUMBER', 'CUSTOMER NUMBER');
+            const txnTypeIdx = findColIndex(headers, 'TRANSACTION_TYPE', 'TRANSACTION TYPE', 'TXN_TYPE', 'TXN TYPE', 'TYPE');
+            const productGroupIdx = findColIndex(headers, 'PRODUCT_GROUP', 'PRODUCT GROUP', 'PROD_GROUP');
 
-            // Verify essential columns exist
             const essential = { 'EMP_ID': empIdx, 'ITEM_DESCRIPTION': itemIdx, 'QUANTITY': qtyIdx, 'GROSS_AMOUNT': amountIdx };
-            const missing = Object.keys(essential).filter(key => essential[key] === -1);
+            const missing = Object.keys(essential).filter(k => essential[k] === -1);
             if (missing.length > 0) {
                 showUIError(`Invalid CSV Columns: The following mandatory headers are missing: ${missing.join(', ')}`);
                 return;
             }
 
-            let reportDate = "Date not found";
-            globalSummary = {};
-            uniqueItems.clear();
-            uniqueAgents.clear(); 
-            unmappedReportItems.clear();
-
+            const records = [];
+            const fileDates = new Set();
             for (let i = dataStartIndex; i < rows.length; i++) {
                 const row = rows[i];
-                if (!row || row.length === 0 || row.join('').trim() === '') continue; // Skip empty rows
-
-                // Safe index check to avoid errors
+                if (!row || row.length === 0 || row.join('').trim() === '') continue;
                 if (row.length <= Math.max(empIdx, itemIdx, qtyIdx, amountIdx)) continue;
-
-                if (reportDate === "Date not found" && dateIdx !== -1 && row[dateIdx]) {
-                    reportDate = row[dateIdx].trim();
-                }
-
                 const rawAgent = row[empIdx] ? row[empIdx].trim() : '';
-                if (!rawAgent) continue;
-                
-                const agentId = rawAgent.replace('gpcf7329.', '').trim(); 
-                const rawItem = row[itemIdx] ? row[itemIdx].trim().replace(/\s+/g, ' ') : '';
-                if (!rawItem) continue;
-
-                let isMapped = true;
-                let item = productMapping[rawItem];
-                if (!item) {
-                    item = rawItem;
-                    unmappedReportItems.add(rawItem);
-                    isMapped = false;
+                if (!rawAgent || rawAgent.toLowerCase().includes('total') || rawAgent.toLowerCase().includes('report')) continue;
+                records.push(row);
+                if (dateIdx !== -1 && row[dateIdx] && row[dateIdx].trim()) {
+                    const normDate = normalizeDateStr(row[dateIdx]);
+                    if (normDate) fileDates.add(normDate);
                 }
-                
-                let qty = parseFloat(row[qtyIdx]) || 0;
-                let amount = parseFloat(row[amountIdx]) || 0;
-                let unitPrice = unitPriceIdx !== -1 ? (parseFloat(row[unitPriceIdx]) || 0) : 0;
-
-                // Skip system check Reactivation fees with 0 price
-                if (item === "Recycle SIM Re-issue" && unitPrice === 0) {
-                    continue; 
-                }
-
-                // --- REFUND LOGIC ---
-                // If the Gross Amount is negative, negate the quantity count so it subtracts instead of inflating items sold.
-                if (amount < 0 && qty > 0) {
-                    qty = -qty;
-                }
-
-                // --- FOC LOGIC ---
-                if (focIdx !== -1 && row[focIdx] && row[focIdx].trim() !== "") {
-                    const focReason = row[focIdx].trim().toLowerCase();
-                    const isEsim = (
-                        unitPrice === 349 || 
-                        rawItem.toLowerCase().includes("esim") || 
-                        rawItem.toLowerCase().includes("ereplacement") || 
-                        item.toLowerCase().includes("esim")
-                    );
-
-                    if (focReason.includes("govt") || focReason.includes("government")) {
-                        item = isEsim ? "Govt. FOC eSIM" : "Govt. FOC Regular";
-                        amount = 0;
-                    } else {
-                        item = isEsim ? "FOC eSIM" : "FOC Regular";
-                        amount = 0; 
-                    }
-                }
-
-                // Bundle qty suppression to prevent double counting activation volume
-                if (rawItem.toLowerCase().includes('bundle') || rawItem === "Power Prime Service") {
-                    qty = 0;
-                }
-
-                if (!globalSummary[agentId]) {
-                    globalSummary[agentId] = {};
-                }
-                if (!globalSummary[agentId][item]) {
-                    globalSummary[agentId][item] = { qty: 0, amount: 0, simNumbers: [] };
-                }
-
-                globalSummary[agentId][item].qty += qty;
-                globalSummary[agentId][item].amount += amount;
-
-                // Capture SIM/MNP/FOC number for New SIM sales, MNP, and FOC items
-                const isNewSim = getCategory(item) === "New SIMs";
-                const isMnp = item === "MNP";
-                const isFoc = item.includes("FOC");
-                if ((isNewSim || isMnp || isFoc) && qty > 0) {
-                    const msisdnIdx = headers.indexOf('MSISDN_IMEI');
-                    const custMsisdnIdx = headers.indexOf('CUSTOMER_MSISDN');
-                    let rawNum = '';
-                    if (msisdnIdx !== -1 && row[msisdnIdx]) {
-                        rawNum = row[msisdnIdx].trim();
-                    }
-                    if ((!rawNum || rawNum === "'") && custMsisdnIdx !== -1 && row[custMsisdnIdx]) {
-                        rawNum = row[custMsisdnIdx].trim();
-                    }
-                    
-                    let cleanedNum = rawNum.replace(/['\s]/g, '');
-                    if (cleanedNum && cleanedNum !== '') {
-                        if (cleanedNum.startsWith('880')) {
-                            cleanedNum = '0' + cleanedNum.substring(3);
-                        }
-                        if (cleanedNum.length === 10 && /^[1-9]/.test(cleanedNum)) {
-                            cleanedNum = '0' + cleanedNum;
-                        }
-                        if (!globalSummary[agentId][item].simNumbers.includes(cleanedNum)) {
-                            globalSummary[agentId][item].simNumbers.push(cleanedNum);
-                        }
-                    }
-                }
-                
-                uniqueItems.add(item);
-                uniqueAgents.add(agentId);
             }
 
-            document.getElementById('report-date').textContent = reportDate;
-            
-            // Check for unmapped catalog entries to trigger warning banner
-            if (unmappedReportItems.size > 0) {
-                triggerUnmappedWarning();
+            const sortedFileDates = Array.from(fileDates).sort();
+            const primaryDate = sortedFileDates.length > 0 ? sortedFileDates[0] : 'Date not found';
+
+            const fileObj = {
+                id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+                name: 'Direct_CSV_Input.csv',
+                size: csvText.length,
+                rawText: cleanText,
+                headers: headers,
+                indices: { empIdx, itemIdx, qtyIdx, amountIdx, dateIdx, focIdx, unitPriceIdx, catCodeIdx, msisdnIdx, custMsisdnIdx, txnTypeIdx, productGroupIdx },
+                records: records,
+                date: primaryDate,
+                dates: sortedFileDates,
+                rowCount: records.length
+            };
+
+            loadedFiles = [fileObj];
+            currentCSVText = cleanText;
+            rebuildReport();
+        }
+
+        function rebuildReport() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+            setTimeout(() => {
+                // 1. Snapshot active filter selections to preserve state across incremental loads
+                const prevAgentCbs = document.querySelectorAll('#agent-filters input[type="checkbox"]');
+                const hadPreviousFilters = prevAgentCbs.length > 0;
+                const prevCheckedAgents = new Set(Array.from(document.querySelectorAll('#agent-filters input:checked')).map(cb => cb.value));
+                const prevAllAgents = new Set(Array.from(prevAgentCbs).map(cb => cb.value));
+
+                const prevItemCbs = document.querySelectorAll('#item-filters input[type="checkbox"]');
+                const prevCheckedItems = new Set(Array.from(document.querySelectorAll('#item-filters input:checked')).map(cb => cb.value));
+                const prevAllItems = new Set(Array.from(prevItemCbs).map(cb => cb.value));
+
+                const prevErsCatCbs = document.querySelectorAll('#ers-category-filters input[type="checkbox"]');
+                const prevCheckedErsCats = new Set(Array.from(document.querySelectorAll('#ers-category-filters input:checked')).map(cb => cb.value));
+                const prevAllErsCats = new Set(Array.from(prevErsCatCbs).map(cb => cb.value));
+
+                const prevErsAmtCbs = document.querySelectorAll('#ers-amount-filters input[type="checkbox"]');
+                const prevCheckedErsAmts = new Set(Array.from(document.querySelectorAll('#ers-amount-filters input:checked')).map(cb => cb.value));
+                const prevAllErsAmts = new Set(Array.from(prevErsAmtCbs).map(cb => cb.value));
+
+                // 2. Reset Aggregation Accumulators
+                globalSummary = {};
+                uniqueItems.clear();
+                uniqueAgents.clear();
+                unmappedReportItems.clear();
+                uniqueErsAmounts.clear();
+                uniqueErsCategories.clear();
+                consolidated = {};
+                const allDates = new Set();
+
+                // 3. Aggregate across all files in loadedFiles
+                for (const file of loadedFiles) {
+                    const { empIdx, itemIdx, qtyIdx, amountIdx, dateIdx, focIdx, unitPriceIdx, catCodeIdx, msisdnIdx, custMsisdnIdx, txnTypeIdx, productGroupIdx } = file.indices;
+
+                    for (const row of file.records) {
+                        if (dateIdx !== -1 && row[dateIdx] && row[dateIdx].trim()) {
+                            const normDate = normalizeDateStr(row[dateIdx]);
+                            if (normDate) allDates.add(normDate);
+                        }
+
+                        const rawAgent = row[empIdx] ? row[empIdx].trim() : '';
+                        if (!rawAgent || rawAgent.toLowerCase().includes('total') || rawAgent.toLowerCase().includes('report')) continue;
+
+                        const agentId = rawAgent.replace(/^gpc[a-z0-9]*\./i, '').replace('gpcf7329.', '').trim();
+                        if (!agentId || agentId.toLowerCase().includes('total') || agentId.toLowerCase().includes('report')) continue;
+
+                        const rawItem = row[itemIdx] ? row[itemIdx].trim().replace(/\s+/g, ' ') : '';
+                        if (!rawItem) continue;
+
+                        // Catalog Mapping & User Mappings
+                        let item = productMapping[rawItem];
+                        if (!item && userProductMapping[rawItem]) {
+                            item = userProductMapping[rawItem];
+                        }
+                        if (!item && customSortOrder.includes(rawItem)) {
+                            item = rawItem;
+                        }
+                        if (!item) {
+                            const rawLower = rawItem.toLowerCase();
+                            const canonicalMatch = customSortOrder.find(c => c.toLowerCase() === rawLower);
+                            if (canonicalMatch) {
+                                item = canonicalMatch;
+                            }
+                        }
+                        if (!item) {
+                            const rawLower = rawItem.toLowerCase();
+                            for (const [k, v] of Object.entries(productMapping)) {
+                                if (k.toLowerCase() === rawLower) {
+                                    item = v;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!item && userProductMapping) {
+                            const rawLower = rawItem.toLowerCase();
+                            for (const [k, v] of Object.entries(userProductMapping)) {
+                                if (k.toLowerCase() === rawLower) {
+                                    item = v;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!item) {
+                            if (/^(pre|post)?\s*[-_]?\s*041$/i.test(rawItem)) {
+                                item = "Regular Kit";
+                            } else if (/tintin[-_\s]*(pre[-_\s]*)?097/i.test(rawItem)) {
+                                item = "Skitto Kit";
+                            } else if (/ereplacement[-_\s]*skitto/i.test(rawItem)) {
+                                item = "eSIM Skitto Kit";
+                            } else if (/ereplacement/i.test(rawItem)) {
+                                item = "eSIM Kit";
+                            } else if (/^flexi[-_\s]*load$/i.test(rawItem)) {
+                                item = "ERS";
+                            }
+                        }
+                        if (!item) {
+                            if (/(alo[\s\S]*(camera|cam)|camera\s*(accessor(y|ies)|cable|mount|bracket|adapter|stand)|(iot|smart|ip|cc|cctv)\s*camera)/i.test(rawItem)) {
+                                item = "Alo CC Camera";
+                            } else if (/zte[-_\s]*(f30|router|sf|device|mf)/i.test(rawItem)) {
+                                item = "ZTE F30 Pro SF";
+                            }
+                        }
+                        if (!item) {
+                            if (/tof.*indv|transfer.*ownership|ownership.*transfer/i.test(rawItem)) {
+                                item = "Ownership Transfer";
+                            } else if (/death.*(case|tof)|tof.*death/i.test(rawItem)) {
+                                item = "Death ToF";
+                            } else if (/sim.*verif/i.test(rawItem)) {
+                                item = "SIM Verification";
+                            } else if (/bio.*(check|status|verif)/i.test(rawItem)) {
+                                item = "Biometric Check";
+                            } else if (/de[-_\s]*activat/i.test(rawItem)) {
+                                item = "Deactivation";
+                            } else if (/\bmnp\b/i.test(rawItem)) {
+                                item = "MNP";
+                            } else if (/reactivat|recycle.*re[-_\s]*issue/i.test(rawItem)) {
+                                item = "Recycle SIM Re-issue";
+                            } else if (/itemized.*bill/i.test(rawItem)) {
+                                item = "Itemized Bill";
+                            } else if (/foc\s*govt\.?\s*esim/i.test(rawItem)) {
+                                item = "FOC Govt. eSIM";
+                            } else if (/foc\s*govt\.?\s*reg/i.test(rawItem)) {
+                                item = "FOC Govt. Regular";
+                            } else if (/foc\s*esim/i.test(rawItem)) {
+                                item = "FOC eSIM";
+                            } else if (/foc\s*reg/i.test(rawItem)) {
+                                item = "FOC Regular";
+                            } else if (/refund/i.test(rawItem)) {
+                                if (/postpaid/i.test(rawItem)) item = "Postpaid Balance Refund";
+                                else if (/advance/i.test(rawItem)) item = "Local Advance Refund";
+                                else if (/security/i.test(rawItem)) item = "Security Deposit Refund";
+                                else item = "Prepaid Balance Refund";
+                            }
+                        }
+                        if (!item) {
+                            item = rawItem;
+                            unmappedReportItems.add(rawItem);
+                        }
+
+                        const rawQtyStr = row[qtyIdx] ? String(row[qtyIdx]).replace(/,/g, '').trim() : '';
+                        const rawAmountStr = row[amountIdx] ? String(row[amountIdx]).replace(/,/g, '').trim() : '';
+                        const rawUnitPriceStr = unitPriceIdx !== -1 && row[unitPriceIdx] ? String(row[unitPriceIdx]).replace(/,/g, '').trim() : '';
+
+                        let qty = parseFloat(rawQtyStr) || 0;
+                        let amount = parseFloat(rawAmountStr) || 0;
+                        let unitPrice = parseFloat(rawUnitPriceStr) || 0;
+
+                        // Business Rule 1: Skip reactivation check fees with 0 price
+                        if (item === "Recycle SIM Re-issue" && unitPrice === 0) {
+                            continue;
+                        }
+
+                        // Business Rule 2: Refund Inversion (negative gross amount or REFUND transaction type -> invert quantity/amount)
+                        const rawTxnType = txnTypeIdx !== undefined && txnTypeIdx !== -1 && row[txnTypeIdx] ? row[txnTypeIdx].trim().toLowerCase() : '';
+                        const isRefundTxn = rawTxnType === 'refund' || rawTxnType === 'return' || rawTxnType === 'cancellation';
+                        if (isRefundTxn) {
+                            if (amount > 0) amount = -amount;
+                            if (qty > 0) qty = -qty;
+                        } else if (amount < 0 && qty > 0) {
+                            qty = -qty;
+                        }
+
+                        // Business Rule 3: FOC Logic
+                        if (focIdx !== -1 && row[focIdx] && row[focIdx].trim() !== "") {
+                            const focReason = row[focIdx].trim().toLowerCase();
+
+                            if (categoryServices.includes(item) && !item.includes("FOC")) {
+                                item = item + " FOC";
+                                amount = 0;
+                            } else {
+                                const isEsim = (
+                                    unitPrice === 349 ||
+                                    rawItem.toLowerCase().includes("esim") ||
+                                    rawItem.toLowerCase().includes("ereplacement") ||
+                                    item.toLowerCase().includes("esim")
+                                );
+
+                                if (focReason.includes("govt") || focReason.includes("government")) {
+                                    item = isEsim ? "FOC Govt. eSIM" : "FOC Govt. Regular";
+                                    amount = 0;
+                                } else {
+                                    item = isEsim ? "FOC eSIM" : "FOC Regular";
+                                    amount = 0;
+                                }
+                            }
+                        }
+
+                        // Business Rule 4: Bundle quantity suppression (prevent activation double-counting)
+                        const rawProdGroup = productGroupIdx !== undefined && productGroupIdx !== -1 && row[productGroupIdx] ? row[productGroupIdx].trim().toLowerCase() : '';
+                        if (rawItem.toLowerCase().includes('bundle') || rawProdGroup.includes('bundle') || rawItem === "Power Prime Service") {
+                            qty = 0;
+                        }
+
+                        // Accumulate in globalSummary
+                        if (!globalSummary[agentId]) {
+                            globalSummary[agentId] = {};
+                        }
+                        if (!globalSummary[agentId][item]) {
+                            globalSummary[agentId][item] = { qty: 0, amount: 0, simNumbers: [], ersBreakdown: {} };
+                        }
+
+                        globalSummary[agentId][item].qty += qty;
+                        globalSummary[agentId][item].amount += amount;
+
+                        // Business Rule 5: ERS Breakdown categorization
+                        if (item === "ERS") {
+                            let rawCatCode = catCodeIdx !== -1 && row[catCodeIdx] ? row[catCodeIdx].trim() : '';
+                            let subType = 'Other';
+                            const cleaned = rawCatCode.toLowerCase();
+
+                            if (cleaned === 'powerload' || cleaned === 'power load' || cleaned === 'power_load') {
+                                subType = 'Powerload';
+                            } else if (cleaned === 'roaming_bdt' || cleaned === 'roaming bdt' || cleaned === 'roamingbdt') {
+                                subType = 'Roaming BDT';
+                            } else if (cleaned === 'bill payment' || cleaned === 'billpayment' || cleaned === 'bill_payment' || cleaned === 'billpay' || cleaned === 'bill pay' || cleaned.startsWith('bill')) {
+                                subType = 'Bill Payment';
+                            } else if (cleaned === 'bundle') {
+                                subType = 'Bundle';
+                            } else if (cleaned === 'internet') {
+                                subType = 'Internet';
+                            } else if (cleaned === 'voice') {
+                                subType = 'Voice';
+                            } else if (cleaned === 'fifa') {
+                                subType = 'FIFA';
+                            } else if (cleaned === 'rate_cutter' || cleaned === 'rate cutter' || cleaned === 'ratecutter') {
+                                subType = 'Rate Cutter';
+                            } else if (powerloadAmounts.has(amount)) {
+                                subType = 'Powerload';
+                            } else if (cleaned === 'flexiload' || cleaned === 'flexi load' || cleaned === 'flexi_load' || cleaned === '') {
+                                subType = 'Flexiload';
+                            } else if (rawCatCode !== '') {
+                                subType = rawCatCode.split(/[\s_-]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            }
+
+                            if (!globalSummary[agentId][item].ersBreakdown[subType]) {
+                                globalSummary[agentId][item].ersBreakdown[subType] = { qty: 0, amount: 0, amounts: [] };
+                            }
+                            globalSummary[agentId][item].ersBreakdown[subType].qty += qty;
+                            globalSummary[agentId][item].ersBreakdown[subType].amount += amount;
+                            globalSummary[agentId][item].ersBreakdown[subType].amounts.push({ amount: amount, agent: agentId });
+                            uniqueErsAmounts.add(amount);
+                            uniqueErsCategories.add(subType);
+                        }
+
+                        // Business Rule 6: SIM / Service Number Deduplication
+                        if (item !== "ERS") {
+                            let rawNum = msisdnIdx !== -1 && row[msisdnIdx] ? row[msisdnIdx].trim() : '';
+                            const cleanRaw = rawNum.replace(/["'+\s]/g, '');
+                            const isPotentialPhone = /^\d{10,13}$/.test(cleanRaw);
+                            if (!isPotentialPhone && custMsisdnIdx !== undefined && custMsisdnIdx !== -1 && row[custMsisdnIdx]) {
+                                const custNum = row[custMsisdnIdx].trim();
+                                if (custNum) rawNum = custNum;
+                            }
+                            let cleanedNum = rawNum.replace(/["'+\s]/g, '');
+                            if (cleanedNum && cleanedNum !== '') {
+                                if (cleanedNum.startsWith('880')) {
+                                    cleanedNum = '0' + cleanedNum.substring(3);
+                                } else if (cleanedNum.startsWith('88')) {
+                                    cleanedNum = cleanedNum.substring(2);
+                                }
+                                if (cleanedNum.length === 10 && /^[1-9]/.test(cleanedNum)) {
+                                    cleanedNum = '0' + cleanedNum;
+                                }
+                                if (cleanedNum.length >= 9 && cleanedNum.length <= 13 && /^[0-9]+$/.test(cleanedNum)) {
+                                    const exists = globalSummary[agentId][item].simNumbers.some(s => s.number === cleanedNum);
+                                    if (!exists) {
+                                        globalSummary[agentId][item].simNumbers.push({ number: cleanedNum, agent: agentId });
+                                    }
+                                }
+                            }
+                        }
+
+                        uniqueItems.add(item);
+                        uniqueAgents.add(agentId);
+                    }
+                }
+
+                // 4. Compute Formatted Date Range Badge
+                const sortedDates = Array.from(allDates).filter(d => d && d !== "Date not found").sort();
+                let formattedDateBadge = "Date not found";
+                if (sortedDates.length === 1) {
+                    formattedDateBadge = sortedDates[0];
+                } else if (sortedDates.length > 1) {
+                    formattedDateBadge = `${sortedDates[0]} to ${sortedDates[sortedDates.length - 1]}`;
+                }
+                const dateElement = document.getElementById('report-date');
+                if (dateElement) dateElement.textContent = formattedDateBadge;
+
+                // 5. Update Drop Zone to Compact Mode & Update Loaded Files UI Bar
+                updateDropZoneToCompact();
+                renderLoadedFilesBar();
+
+                // 6. Check unmapped products warning banner
+                if (unmappedReportItems.size > 0) {
+                    triggerUnmappedWarning();
+                } else if (!alertBox.classList.contains('alert-warning')) {
+                    hideAlerts();
+                }
+
+                // 7. Render Filters with State Preservation
+                renderFiltersPreservingSelection({
+                    hadPreviousFilters,
+                    prevCheckedAgents, prevAllAgents,
+                    prevCheckedItems, prevAllItems,
+                    prevCheckedErsCats, prevAllErsCats,
+                    prevCheckedErsAmts, prevAllErsAmts
+                });
+
+                // 8. Reveal report container & generate table
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                reportContainer.style.display = 'block';
+                const searchTrigger = document.getElementById('floating-search-trigger');
+                if (searchTrigger) searchTrigger.style.display = 'flex';
+
+                generateTable();
+            }, 10);
+        }
+
+        function updateDropZoneToCompact() {
+            dropZone.classList.add('compact');
+            dropZone.style.display = 'flex';
+            const dropZoneText = document.getElementById('drop-zone-text');
+            if (dropZoneText) {
+                dropZoneText.textContent = '+ Drag & Drop more CSV files here, or click to browse';
+            }
+            const dropZoneSubtext = document.getElementById('drop-zone-subtext');
+            if (dropZoneSubtext) {
+                dropZoneSubtext.style.display = 'none';
+            }
+            const headerContainer = document.querySelector('.header-container');
+            if (headerContainer) {
+                headerContainer.style.display = 'none';
+            }
+        }
+
+        function resetDropZoneToLanding() {
+            dropZone.classList.remove('compact');
+            dropZone.style.display = 'flex';
+            const dropZoneText = document.getElementById('drop-zone-text');
+            if (dropZoneText) {
+                dropZoneText.textContent = 'Drag & Drop your CSV file here';
+            }
+            const dropZoneSubtext = document.getElementById('drop-zone-subtext');
+            if (dropZoneSubtext) {
+                dropZoneSubtext.style.display = 'block';
+            }
+            const headerContainer = document.querySelector('.header-container');
+            if (headerContainer) {
+                headerContainer.style.display = 'block';
+            }
+        }
+
+        function renderLoadedFilesBar() {
+            const bar = document.getElementById('loaded-files-bar');
+            if (!bar) return;
+            if (!loadedFiles || loadedFiles.length === 0) {
+                bar.style.display = 'none';
+                bar.innerHTML = '';
+                return;
             }
 
-            renderFilters();
-            generateTable();
-            
-            dropZone.style.display = 'none';
-            document.querySelector('.header-container').style.display = 'none';
-            reportContainer.style.display = 'block';
+            bar.style.display = 'flex';
+            let html = `
+                <span class="loaded-files-label">
+                    <svg style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;vertical-align:-2px" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    Active Files (${loadedFiles.length}):
+                </span>
+            `;
+
+            loadedFiles.forEach(file => {
+                const metaText = file.rowCount !== undefined ? `${file.rowCount} rows` : formatFileSize(file.size);
+                const safeName = escapeHTML(file.name);
+                html += `
+                    <div class="file-chip" title="${safeName} (${formatFileSize(file.size)})">
+                        <span class="file-chip-name">${safeName}</span>
+                        <span class="file-chip-meta">(${metaText})</span>
+                        <button type="button" class="file-chip-remove" onclick="removeLoadedFile('${file.id}', event)" aria-label="Remove ${safeName}">&times;</button>
+                    </div>
+                `;
+            });
+
+            bar.innerHTML = html;
+        }
+
+        function removeLoadedFile(fileId, event) {
+            if (event) event.stopPropagation();
+            if (!loadedFiles) return;
+            loadedFiles = loadedFiles.filter(f => f.id !== fileId);
+            if (loadedFiles.length === 0) {
+                resetAutomator();
+            } else {
+                rebuildReport();
+                showToast("File removed. Report updated.");
+            }
+        }
+
+        function escapeHtml(str) {
+            return escapeHTML(str);
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes || isNaN(bytes)) return '0 B';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
 
         function triggerUnmappedWarning() {
             alertIcon.textContent = '⚠️';
             alertBox.className = 'alert alert-warning';
             
-            let listHtml = '<strong>Notice:</strong> The following raw items from the CSV are not in the product mapping catalog. They have been categorized under <em>"Other / Handsets"</em> using their raw descriptions:';
-            listHtml += '<ul>';
-            unmappedReportItems.forEach(item => {
-                listHtml += `<li>"${item}"</li>`;
-            });
-            listHtml += '</ul>';
+            let listHtml = `<strong>Notice:</strong> ${unmappedReportItems.size} unrecognized raw products were found in the CSV. <button class="btn btn-secondary" onclick="openMappingModal()" style="margin-left: 10px; padding: 4px 12px; font-size: 0.85rem; cursor: pointer; color: #fff; background: var(--primary); border: none; border-radius: 4px;">Map Unknowns</button>`;
             
             alertContent.innerHTML = listHtml;
             alertBox.style.display = 'flex';
+        }
+
+        function openMappingModal() {
+            const modalBody = document.getElementById('mapping-modal-body');
+            modalBody.innerHTML = '';
+
+            unmappedReportItems.forEach(rawItem => {
+                const row = document.createElement('div');
+                row.className = 'mapping-row';
+                
+                const title = document.createElement('h4');
+                title.textContent = rawItem;
+                
+                const controls = document.createElement('div');
+                controls.className = 'mapping-controls';
+                
+                const select = document.createElement('select');
+                select.setAttribute('data-raw', rawItem);
+                
+                // Add the existing known items to select
+                const options = ["-- Select Known Item --", ...customSortOrder, "Other / Unknown"];
+                options.forEach(opt => {
+                    const optionEl = document.createElement('option');
+                    optionEl.value = opt === "-- Select Known Item --" ? "" : opt;
+                    optionEl.textContent = opt;
+                    select.appendChild(optionEl);
+                });
+                
+                controls.appendChild(select);
+                row.appendChild(title);
+                row.appendChild(controls);
+                modalBody.appendChild(row);
+            });
+
+            document.getElementById('mapping-modal').style.display = 'flex';
+        }
+
+        function closeMappingModal() {
+            document.getElementById('mapping-modal').style.display = 'none';
+        }
+
+        function saveMappings() {
+            const selects = document.querySelectorAll('#mapping-modal-body select');
+            let updated = false;
+
+            selects.forEach(select => {
+                const rawItem = select.getAttribute('data-raw');
+                const mappedVal = select.value;
+                
+                if (mappedVal && mappedVal !== "") {
+                    userProductMapping[rawItem] = mappedVal;
+                    updated = true;
+                }
+            });
+
+            if (updated) {
+                // Save to persistent memory
+                localStorage.setItem('userProductMapping', JSON.stringify(userProductMapping));
+                closeMappingModal();
+                showToast("Mappings saved successfully! Recalculating...");
+                
+                // Show loading spinner briefly while re-parsing
+                document.getElementById('report-container').style.display = 'none';
+                document.getElementById('loading-overlay').style.display = 'flex';
+                
+                // Re-aggregate across ALL loaded files with updated mappings
+                setTimeout(() => {
+                    rebuildReport();
+                }, 50);
+            } else {
+                closeMappingModal();
+            }
         }
 
         function hideAlerts() {
@@ -1105,32 +2527,79 @@
         }
 
         function toggleFilters(group, state) {
-            const containerId = group === 'agent' ? 'agent-filters' : 'item-filters';
+            let containerId = '';
+            if (group === 'agent') containerId = 'agent-filters';
+            else if (group === 'item') containerId = 'item-filters';
+            else if (group === 'ers-amount') containerId = 'ers-amount-filters';
+            else if (group === 'ers-category') containerId = 'ers-category-filters';
             const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]`);
             checkboxes.forEach(cb => cb.checked = state);
             generateTable();
         }
 
-        function renderFilters() {
+        function renderFiltersPreservingSelection(snap) {
             agentFiltersContainer.innerHTML = '';
             itemFiltersContainer.innerHTML = '';
-            
-            const agentsArray = Array.from(uniqueAgents).sort();
-            const itemsArray = Array.from(uniqueItems).sort();
-            
+
+            const agentsArray = Array.from(uniqueAgents).sort(compareAgents);
+            const itemsArray = Array.from(uniqueItems).sort(compareItems);
+
             agentsArray.forEach(agent => {
+                const isChecked = !snap.hadPreviousFilters || !snap.prevAllAgents.has(agent) || snap.prevCheckedAgents.has(agent);
                 const label = document.createElement('label');
                 label.className = 'checkbox-label';
-                label.innerHTML = `<input type="checkbox" value="${agent}" checked onchange="generateTable()"> ${agent.toUpperCase()}`;
+                label.innerHTML = `<input type="checkbox" value="${agent}" ${isChecked ? 'checked' : ''} onchange="generateTable()"> ${agent.toUpperCase()}`;
                 agentFiltersContainer.appendChild(label);
             });
 
             itemsArray.forEach(item => {
+                const isChecked = !snap.hadPreviousFilters || !snap.prevAllItems.has(item) || snap.prevCheckedItems.has(item);
                 const label = document.createElement('label');
                 label.className = 'checkbox-label';
-                label.innerHTML = `<input type="checkbox" value="${item}" checked onchange="generateTable()"> ${item}`;
+                label.innerHTML = `<input type="checkbox" value="${item}" ${isChecked ? 'checked' : ''} onchange="generateTable()"> ${item}`;
                 itemFiltersContainer.appendChild(label);
             });
+
+            // ERS Category Filters
+            const ersCategoriesFiltersContainer = document.getElementById('ers-category-filters');
+            ersCategoriesFiltersContainer.innerHTML = '';
+            const ersCatGroup = document.getElementById('ers-category-filter-group');
+            if (uniqueErsCategories.size === 0) {
+                ersCatGroup.style.display = 'none';
+            } else {
+                ersCatGroup.style.display = 'block';
+                const ersCategoriesArray = Array.from(uniqueErsCategories).sort();
+                ersCategoriesArray.forEach(cat => {
+                    const isChecked = !snap.hadPreviousFilters || !snap.prevAllErsCats.has(cat) || snap.prevCheckedErsCats.has(cat);
+                    const label = document.createElement('label');
+                    label.className = 'checkbox-label';
+                    label.innerHTML = `<input type="checkbox" value="${cat}" ${isChecked ? 'checked' : ''} onchange="generateTable()"> ${cat}`;
+                    ersCategoriesFiltersContainer.appendChild(label);
+                });
+            }
+
+            // ERS Amount Filters
+            const ersAmountsFiltersContainer = document.getElementById('ers-amount-filters');
+            ersAmountsFiltersContainer.innerHTML = '';
+            const ersGroup = document.getElementById('ers-amount-filter-group');
+            if (uniqueErsAmounts.size === 0) {
+                ersGroup.style.display = 'none';
+            } else {
+                ersGroup.style.display = 'block';
+                const ersAmountsArray = Array.from(uniqueErsAmounts).sort((a, b) => a - b);
+                ersAmountsArray.forEach(amt => {
+                    const strAmt = amt.toString();
+                    const isChecked = !snap.hadPreviousFilters || !snap.prevAllErsAmts.has(strAmt) || snap.prevCheckedErsAmts.has(strAmt);
+                    const label = document.createElement('label');
+                    label.className = 'checkbox-label';
+                    label.innerHTML = `<input type="checkbox" value="${amt}" ${isChecked ? 'checked' : ''} onchange="generateTable()"> ${amt} BDT`;
+                    ersAmountsFiltersContainer.appendChild(label);
+                });
+            }
+        }
+
+        function renderFilters() {
+            renderFiltersPreservingSelection({ hadPreviousFilters: false });
         }
 
         function setViewMode(mode) {
@@ -1140,14 +2609,216 @@
             generateTable();
         }
 
+
+
+
+
+        function generateItemRowHtml(item, displayData, detailsId) {
+            const isErs = item === "ERS";
+            const isRefund = displayData.qty < 0 || displayData.amount < 0;
+            const qtyClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+            const amountClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
+
+            const hasDetails = (!isErs && displayData.simNumbers && displayData.simNumbers.length > 0) || (isErs && displayData.ersBreakdown && Object.keys(displayData.ersBreakdown).length > 0);
+
+            if (!hasDetails) {
+                return `<tr>
+                            <td style="padding-left: 35px;">${escapeHTML(item)}</td>
+                            <td ${qtyClass}>${displayData.qty}</td>
+                            <td ${amountClass}>${displayData.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                         </tr>`;
+            }
+
+            const displayStyle = (numberSearchQuery !== '') ? 'style="display: table-row;"' : 'style="display: none;"';
+            const arrowChar = (numberSearchQuery !== '') ? '▼' : '▶';
+            const arrowRotate = (numberSearchQuery !== '') ? 'style="transform: rotate(90deg);"' : '';
+
+            let detailsContentHtml = '';
+            if (isErs) {
+                const sortedSubTypes = Object.keys(displayData.ersBreakdown).sort();
+                detailsContentHtml = `<span class="details-title">ERS BREAKDOWN:</span>
+                    <table class="ers-breakdown-table">
+                        <thead>
+                            <tr>
+                                <th>Sub-type</th>
+                                <th class="text-right">Quantity</th>
+                                <th class="text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedSubTypes.map(sub => {
+                                const subData = displayData.ersBreakdown[sub];
+                                const amtBadges = subData.amounts ? subData.amounts.map(x => {
+                                    return `<span class="ers-amount-badge" title="Sold by: ${escapeHTML(x.agent.toUpperCase())} (Click to copy)" onclick="copyToClipboard('${escapeHTML(x.amount.toString())}', this, event, '${escapeHTML(x.agent.toUpperCase())}')">${escapeHTML(x.amount.toString())}</span>`;
+                                }).join('') : '';
+                                return `
+                                    <tr>
+                                        <td>
+                                            <div style="font-weight: 600;">${escapeHTML(sub)}</div>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+                                                ${amtBadges}
+                                            </div>
+                                        </td>
+                                        <td class="text-right">${subData.qty}</td>
+                                        <td class="text-right">${subData.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>`;
+            } else {
+                const numbersList = displayData.simNumbers.map(s => s.number).join(', ');
+                const encNumbers = escapeHTML(encodeURIComponent(JSON.stringify(displayData.simNumbers)));
+                
+                let badgesHtml = '';
+                if (numberSearchQuery !== '') {
+                    badgesHtml = displayData.simNumbers.map(sim => {
+                        const highlightClass = numberSearchQuery !== '' && sim.number.includes(numberSearchQuery) ? 'number-badge highlighted' : 'number-badge';
+                        return `<span class="${highlightClass}" title="Sold by: ${escapeHTML(sim.agent.toUpperCase())} (Click to copy)" onclick="copyToClipboard('${escapeHTML(sim.number)}', this, event, '${escapeHTML(sim.agent.toUpperCase())}')">${escapeHTML(sim.number)}</span>`;
+                    }).join('');
+                } else {
+                    badgesHtml = `<span class="text-muted" style="font-size: 0.8rem; font-style: italic;">Click row or arrow to view numbers...</span>`;
+                }
+
+                detailsContentHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span class="details-title">SOLD NUMBERS (${displayData.simNumbers.length}):</span>
+                                    <button onclick="copyToClipboard('${escapeHTML(numbersList)}', this, event)" class="btn-copy">
+                                        <svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                        </svg>
+                                        Copy All
+                                    </button>
+                                </div>
+                                <div class="badges-wrapper" data-numbers="${encNumbers}">
+                                     ${badgesHtml}
+                                </div>`;
+            }
+
+            return `<tr onclick="toggleDetailsRow('${escapeHTML(detailsId)}')" class="clickable-row">
+                        <td style="padding-left: 35px; font-weight: 500;">
+                            <span id="arrow-${escapeHTML(detailsId)}" class="expand-arrow" ${arrowRotate}>${arrowChar}</span> ${escapeHTML(item)}
+                        </td>
+                        <td ${qtyClass}>${displayData.qty}</td>
+                        <td ${amountClass}>${displayData.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                     </tr>
+                     <tr id="${escapeHTML(detailsId)}" class="details-row" ${displayStyle}>
+                        <td colspan="3" class="details-cell">
+                            <div class="details-container">
+                                ${detailsContentHtml}
+                            </div>
+                        </td>
+                     </tr>`;
+        }
+
         function generateTable() {
             const activeAgents = Array.from(document.querySelectorAll('#agent-filters input[type="checkbox"]:checked')).map(cb => cb.value);
             const activeItems = Array.from(document.querySelectorAll('#item-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+            const activeErsCategories = Array.from(document.querySelectorAll('#ers-category-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+            const activeErsAmounts = Array.from(document.querySelectorAll('#ers-amount-filters input[type="checkbox"]:checked')).map(cb => cb.value);
 
+            // Compute consolidated data (always populated for KPIs & export functions)
+            consolidated = {};
+            activeAgents.forEach(agent => {
+                if (globalSummary[agent]) {
+                    activeItems.forEach(item => {
+                        if (globalSummary[agent][item]) {
+                            if (!consolidated[item]) {
+                                consolidated[item] = { qty: 0, amount: 0, simNumbers: [], ersBreakdown: {} };
+                            }
+                            consolidated[item].qty += globalSummary[agent][item].qty;
+                            consolidated[item].amount += globalSummary[agent][item].amount;
+                            
+                            if (globalSummary[agent][item].simNumbers) {
+                                globalSummary[agent][item].simNumbers.forEach(sim => {
+                                    const exists = consolidated[item].simNumbers.some(s => s.number === sim.number);
+                                    if (!exists) {
+                                        consolidated[item].simNumbers.push(sim);
+                                    }
+                                });
+                            }
+
+                            if (globalSummary[agent][item].ersBreakdown) {
+                                for (const [subType, subData] of Object.entries(globalSummary[agent][item].ersBreakdown)) {
+                                    if (!consolidated[item].ersBreakdown[subType]) {
+                                        consolidated[item].ersBreakdown[subType] = { qty: 0, amount: 0, amounts: [] };
+                                    }
+                                    consolidated[item].ersBreakdown[subType].qty += subData.qty;
+                                    consolidated[item].ersBreakdown[subType].amount += subData.amount;
+                                    if (subData.amounts) {
+                                        consolidated[item].ersBreakdown[subType].amounts.push(...subData.amounts);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Calculate KPI Dashboard metrics based on active selections
             let grandTotalQty = 0;
             let grandTotalAmount = 0;
-            let visibleRowsCount = 0;
+            let grandErsAmount = 0;
+            let grandSimsCount = 0;
+            let grandPowerloadAmount = 0;
+            const sims = ["Djuice", "Skitto", "Prime", "No. 1 Plan", "Power Prime", "Recycle SIM", "eSIM Prepaid", "eSIM Postpaid", "eSIM Skitto"];
 
+            Object.keys(consolidated).forEach(item => {
+                const data = consolidated[item];
+                const isErs = item === "ERS";
+                let displayData = data;
+
+                if (numberSearchQuery !== '') {
+                    if (isErs) return;
+                    const matchingNumbers = (data.simNumbers || []).filter(sim => sim.number.includes(numberSearchQuery));
+                    if (matchingNumbers.length === 0) return;
+                    displayData = {
+                        ...data,
+                        simNumbers: matchingNumbers,
+                        qty: matchingNumbers.length,
+                        amount: matchingNumbers.length * (data.qty !== 0 ? (data.amount / data.qty) : 0)
+                    };
+                } else if (isErs) {
+                    let totalErsQty = 0;
+                    let totalErsAmount = 0;
+                    for (const [subType, subData] of Object.entries(data.ersBreakdown || {})) {
+                        if (!activeErsCategories.includes(subType)) continue;
+                        const filteredAmounts = (subData.amounts || []).filter(x => activeErsAmounts.includes(x.amount.toString()));
+                        if (filteredAmounts.length > 0) {
+                            const subAmt = filteredAmounts.reduce((sum, x) => sum + x.amount, 0);
+                            totalErsQty += filteredAmounts.length;
+                            totalErsAmount += subAmt;
+                            if (subType === 'Powerload') {
+                                grandPowerloadAmount += subAmt;
+                            }
+                        }
+                    }
+                    displayData = { qty: totalErsQty, amount: totalErsAmount };
+                }
+
+                if (isErs && displayData.qty === 0) return;
+
+                grandTotalQty += displayData.qty;
+                grandTotalAmount += displayData.amount;
+                
+                if (isErs) {
+                    grandErsAmount += displayData.amount;
+                }
+                if (sims.includes(item)) {
+                    grandSimsCount += displayData.qty;
+                }
+            });
+
+            // Render KPI values to UI
+            const powerloadCardEl = document.getElementById('grand-powerload');
+            if (powerloadCardEl) {
+                powerloadCardEl.textContent = grandPowerloadAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            document.getElementById('grand-total').textContent = grandTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('grand-ers').textContent = grandErsAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('grand-sims').textContent = grandSimsCount;
+
+            let visibleRowsCount = 0;
             let html = `<table>
                             <thead>
                                 <tr>
@@ -1159,7 +2830,7 @@
                             <tbody>`;
 
             if (activeViewMode === 'agent') {
-                const agents = Object.keys(globalSummary).sort();
+                const agents = Object.keys(globalSummary).sort(compareAgents);
 
                 agents.forEach(agent => {
                     if (!activeAgents.includes(agent)) return;
@@ -1170,66 +2841,70 @@
 
                     displayCategories.forEach(category => {
                         const allAgentItems = Object.keys(globalSummary[agent]);
-                        const categoryItems = allAgentItems.filter(item => getCategory(item) === category && activeItems.includes(item)).sort();
+                        const categoryItems = allAgentItems.filter(item => getCategory(item) === category && activeItems.includes(item)).sort(compareItems);
                         
                         if (categoryItems.length > 0) {
                             agentHtml += `<tr class="category-header">
-                                            <td colspan="3" style="padding-left: 20px;">-- ${category.toUpperCase()} --</td>
+                                            <td colspan="3" style="padding-left: 20px;">-- ${escapeHTML(category.toUpperCase())} --</td>
                                           </tr>`;
                             
                             categoryItems.forEach(item => {
                                 const data = globalSummary[agent][item];
-                                agentTotalQty += data.qty;
-                                agentTotalAmount += data.amount;
+                                const isErs = item === "ERS";
 
-                                const isRefund = data.qty < 0 || data.amount < 0;
-                                const qtyClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
-                                const amountClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
-
-                                const hasDetails = (category === "New SIMs" || item === "MNP" || item.includes("FOC")) && data.simNumbers && data.simNumbers.length > 0;
-                                const detailsId = `details-agent-${agent}-${item.replace(/\s+/g, '-')}`;
-
-                                if (hasDetails) {
-                                    agentHtml += `<tr onclick="toggleDetailsRow('${detailsId}')" class="clickable-row">
-                                                <td style="padding-left: 35px; font-weight: 500;">
-                                                    <span id="arrow-${detailsId}" class="expand-arrow">▶</span> ${item}
-                                                </td>
-                                                <td ${qtyClass}>${data.qty}</td>
-                                                <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                             </tr>
-                                             <tr id="${detailsId}" class="details-row" style="display: none;">
-                                                <td colspan="3" class="details-cell">
-                                                    <div class="details-container">
-                                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                                            <span class="details-title">SOLD NUMBERS (${data.simNumbers.length}):</span>
-                                                            <button onclick="copyToClipboard('${item.replace(/'/g, "\\'")}:\\n${data.simNumbers.join(', ')}', this, event)" class="btn-copy">
-                                                                <svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
-                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                                                </svg>
-                                                                Copy All
-                                                            </button>
-                                                        </div>
-                                                        <div class="badges-wrapper">
-                                                            ${data.simNumbers.map(num => `<span class="number-badge" title="Click to copy" onclick="copyToClipboard('${num}', this, event)">${num}</span>`).join('')}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                             </tr>`;
-                                } else {
-                                    agentHtml += `<tr>
-                                                <td style="padding-left: 35px;">${item}</td>
-                                                <td ${qtyClass}>${data.qty}</td>
-                                                <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                             </tr>`;
+                                let displayData = data;
+                                if (isErs) {
+                                    let filteredErsBreakdown = {};
+                                    let totalErsQty = 0;
+                                    let totalErsAmount = 0;
+                                    for (const [subType, subData] of Object.entries(data.ersBreakdown || {})) {
+                                        if (!activeErsCategories.includes(subType)) continue;
+                                        const filteredAmounts = (subData.amounts || []).filter(x => activeErsAmounts.includes(x.amount.toString()));
+                                        if (filteredAmounts.length > 0) {
+                                            const subQty = filteredAmounts.length;
+                                            const subAmt = filteredAmounts.reduce((sum, x) => sum + x.amount, 0);
+                                            filteredErsBreakdown[subType] = {
+                                                qty: subQty,
+                                                amount: subAmt,
+                                                amounts: filteredAmounts
+                                            };
+                                            totalErsQty += subQty;
+                                            totalErsAmount += subAmt;
+                                        }
+                                    }
+                                    displayData = {
+                                        qty: totalErsQty,
+                                        amount: totalErsAmount,
+                                        ersBreakdown: filteredErsBreakdown
+                                    };
                                 }
+
+                                if (numberSearchQuery !== '') {
+                                    if (isErs) return;
+                                    const matchingNumbers = (displayData.simNumbers || []).filter(sim => sim.number.includes(numberSearchQuery));
+                                    if (matchingNumbers.length === 0) return;
+                                    displayData = {
+                                        ...displayData,
+                                        simNumbers: matchingNumbers,
+                                        qty: matchingNumbers.length,
+                                        amount: matchingNumbers.length * (data.qty !== 0 ? (data.amount / data.qty) : 0)
+                                    };
+                                }
+
+                                if (isErs && displayData.qty === 0) return;
+
+                                agentTotalQty += displayData.qty;
+                                agentTotalAmount += displayData.amount;
+
+                                const detailsId = `details-agent-${agent}-${item.replace(/\s+/g, '-')}`;
+                                agentHtml += generateItemRowHtml(item, displayData, detailsId);
                             });
                         }
                     });
 
                     if (agentTotalQty !== 0 || agentTotalAmount !== 0) {
                         html += `<tr class="agent-header">
-                                    <td colspan="3">Agent: ${agent.toUpperCase()}</td>
+                                    <td colspan="3">Agent: ${escapeHTML(agent.toUpperCase())}</td>
                                  </tr>`;
                         html += agentHtml;
                         
@@ -1238,97 +2913,73 @@
                         const subtotalAmountClass = subtotalIsRefund ? 'class="text-right text-refund"' : 'class="text-right"';
 
                         html += `<tr style="background-color: var(--table-row-hover); font-weight: 600;">
-                                    <td class="text-right" style="padding-right: 20px;"><em>Subtotal for ${agent.toUpperCase()}</em></td>
+                                    <td class="text-right" style="padding-right: 20px;"><em>Subtotal for ${escapeHTML(agent.toUpperCase())}</em></td>
                                     <td ${subtotalQtyClass} style="border-top: 1px solid var(--card-border);">${agentTotalQty}</td>
                                     <td ${subtotalAmountClass} style="border-top: 1px solid var(--card-border);">${agentTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                  </tr>`;
                         
-                        grandTotalQty += agentTotalQty;
-                        grandTotalAmount += agentTotalAmount;
                         visibleRowsCount++;
                     }
                 });
             } else {
-                let consolidated = {};
-                
-                activeAgents.forEach(agent => {
-                    if (globalSummary[agent]) {
-                        activeItems.forEach(item => {
-                            if (globalSummary[agent][item]) {
-                                if (!consolidated[item]) {
-                                    consolidated[item] = { qty: 0, amount: 0, simNumbers: [] };
-                                }
-                                consolidated[item].qty += globalSummary[agent][item].qty;
-                                consolidated[item].amount += globalSummary[agent][item].amount;
-                                
-                                if (globalSummary[agent][item].simNumbers) {
-                                    globalSummary[agent][item].simNumbers.forEach(num => {
-                                        if (!consolidated[item].simNumbers.includes(num)) {
-                                            consolidated[item].simNumbers.push(num);
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    }
-                });
-
                 displayCategories.forEach(category => {
                     const allConsolidatedItems = Object.keys(consolidated);
-                    const categoryItems = allConsolidatedItems.filter(item => getCategory(item) === category).sort();
+                    const categoryItems = allConsolidatedItems.filter(item => getCategory(item) === category && activeItems.includes(item)).sort(compareItems);
                     
                     if (categoryItems.length > 0) {
                         html += `<tr class="category-header">
-                                    <td colspan="3" style="padding-left: 20px;">-- ${category.toUpperCase()} --</td>
+                                    <td colspan="3" style="padding-left: 20px;">-- ${escapeHTML(category.toUpperCase())} --</td>
                                  </tr>`;
                         
                         categoryItems.forEach(item => {
                             const data = consolidated[item];
-                            grandTotalQty += data.qty;
-                            grandTotalAmount += data.amount;
+                            const isErs = item === "ERS";
+
+                            let displayData = data;
+                            if (isErs) {
+                                let filteredErsBreakdown = {};
+                                let totalErsQty = 0;
+                                let totalErsAmount = 0;
+                                for (const [subType, subData] of Object.entries(data.ersBreakdown || {})) {
+                                    if (!activeErsCategories.includes(subType)) continue;
+                                    const filteredAmounts = (subData.amounts || []).filter(x => activeErsAmounts.includes(x.amount.toString()));
+                                    if (filteredAmounts.length > 0) {
+                                        const subQty = filteredAmounts.length;
+                                        const subAmt = filteredAmounts.reduce((sum, x) => sum + x.amount, 0);
+                                        filteredErsBreakdown[subType] = {
+                                            qty: subQty,
+                                            amount: subAmt,
+                                            amounts: filteredAmounts
+                                        };
+                                        totalErsQty += subQty;
+                                        totalErsAmount += subAmt;
+                                    }
+                                }
+                                displayData = {
+                                    qty: totalErsQty,
+                                    amount: totalErsAmount,
+                                    ersBreakdown: filteredErsBreakdown
+                                };
+                            }
+
+                            if (numberSearchQuery !== '') {
+                                if (isErs) return;
+                                const matchingNumbers = (displayData.simNumbers || []).filter(sim => sim.number.includes(numberSearchQuery));
+                                if (matchingNumbers.length === 0) return;
+                                displayData = {
+                                    ...displayData,
+                                    simNumbers: matchingNumbers,
+                                    qty: matchingNumbers.length,
+                                    amount: matchingNumbers.length * (data.qty !== 0 ? (data.amount / data.qty) : 0)
+                                };
+                            }
+
+                            if (isErs && displayData.qty === 0) return;
+
                             visibleRowsCount++;
 
-                            const isRefund = data.qty < 0 || data.amount < 0;
-                            const qtyClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
-                            const amountClass = isRefund ? 'class="text-right text-refund"' : 'class="text-right"';
-
-                            const hasDetails = (category === "New SIMs" || item === "MNP" || item.includes("FOC")) && data.simNumbers && data.simNumbers.length > 0;
                             const detailsId = `details-consolidated-${item.replace(/\s+/g, '-')}`;
-
-                            if (hasDetails) {
-                                html += `<tr onclick="toggleDetailsRow('${detailsId}')" class="clickable-row">
-                                            <td style="padding-left: 35px; font-weight: 500;">
-                                                <span id="arrow-${detailsId}" class="expand-arrow">▶</span> ${item}
-                                            </td>
-                                            <td ${qtyClass}>${data.qty}</td>
-                                            <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                         </tr>
-                                         <tr id="${detailsId}" class="details-row" style="display: none;">
-                                            <td colspan="3" class="details-cell">
-                                                <div class="details-container">
-                                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                                        <span class="details-title">SOLD NUMBERS (${data.simNumbers.length}):</span>
-                                                        <button onclick="copyToClipboard('${item.replace(/'/g, "\\'")}:\\n${data.simNumbers.join(', ')}', this, event)" class="btn-copy">
-                                                            <svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
-                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                                            </svg>
-                                                            Copy All
-                                                        </button>
-                                                    </div>
-                                                    <div class="badges-wrapper">
-                                                        ${data.simNumbers.map(num => `<span class="number-badge" title="Click to copy" onclick="copyToClipboard('${num}', this, event)">${num}</span>`).join('')}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                         </tr>`;
-                            } else {
-                                html += `<tr>
-                                            <td style="padding-left: 35px;">${item}</td>
-                                            <td ${qtyClass}>${data.qty}</td>
-                                            <td ${amountClass}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                         </tr>`;
-                            }
+                            html += generateItemRowHtml(item, displayData, detailsId);
                         });
                     }
                 });
@@ -1341,16 +2992,170 @@
             html += `</tbody></table>`;
             
             tableWrapper.innerHTML = html;
-            document.getElementById('grand-qty').textContent = grandTotalQty;
-            document.getElementById('grand-total').textContent = grandTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function exportConsolidatedToCSV() {
+            let csvLines = [];
+            csvLines.push("Category,Item Description,Total Quantity,Gross Amount");
+            
+            const activeErsCategories = Array.from(document.querySelectorAll('#ers-category-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+            const activeErsAmounts = Array.from(document.querySelectorAll('#ers-amount-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            displayCategories.forEach(category => {
+                const allConsolidatedItems = Object.keys(consolidated);
+                const categoryItems = allConsolidatedItems.filter(item => getCategory(item) === category).sort(compareItems);
+                
+                categoryItems.forEach(item => {
+                    const data = consolidated[item];
+                    if (!data) return;
+                    const isErs = item === "ERS";
+
+                    let displayData = data;
+                    if (isErs) {
+                        let totalErsQty = 0;
+                        let totalErsAmount = 0;
+                        for (const [subType, subData] of Object.entries(data.ersBreakdown || {})) {
+                            if (!activeErsCategories.includes(subType)) continue;
+                            const filteredAmounts = (subData.amounts || []).filter(x => activeErsAmounts.includes(x.amount.toString()));
+                            if (filteredAmounts.length > 0) {
+                                totalErsQty += filteredAmounts.length;
+                                totalErsAmount += filteredAmounts.reduce((sum, x) => sum + x.amount, 0);
+                            }
+                        }
+                        displayData = { qty: totalErsQty, amount: totalErsAmount };
+                    }
+                    
+                    if (isErs && displayData.qty === 0) return;
+                    
+                    const escapedCategory = `"${category.replace(/"/g, '""')}"`;
+                    const escapedItem = `"${item.replace(/"/g, '""')}"`;
+                    csvLines.push(`${escapedCategory},${escapedItem},${displayData.qty},${displayData.amount}`);
+                });
+            });
+            
+            let grandTotalQty = 0;
+            let grandTotalAmount = 0;
+            
+            displayCategories.forEach(category => {
+                const allConsolidatedItems = Object.keys(consolidated);
+                const categoryItems = allConsolidatedItems.filter(item => getCategory(item) === category).sort(compareItems);
+                categoryItems.forEach(item => {
+                    const data = consolidated[item];
+                    if (!data) return;
+                    const isErs = item === "ERS";
+                    let displayData = data;
+                    if (isErs) {
+                        let totalErsQty = 0;
+                        let totalErsAmount = 0;
+                        for (const [subType, subData] of Object.entries(data.ersBreakdown || {})) {
+                            if (!activeErsCategories.includes(subType)) continue;
+                            const filteredAmounts = (subData.amounts || []).filter(x => activeErsAmounts.includes(x.amount.toString()));
+                            if (filteredAmounts.length > 0) {
+                                totalErsQty += filteredAmounts.length;
+                                totalErsAmount += filteredAmounts.reduce((sum, x) => sum + x.amount, 0);
+                            }
+                        }
+                        displayData = { qty: totalErsQty, amount: totalErsAmount };
+                    }
+                    if (isErs && displayData.qty === 0) return;
+                    grandTotalQty += displayData.qty;
+                    grandTotalAmount += displayData.amount;
+                });
+            });
+            
+            csvLines.push(`,Grand Total,${grandTotalQty},${grandTotalAmount}`);
+            
+            const csvBlob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const csvUrl = URL.createObjectURL(csvBlob);
+            const downloadLink = document.createElement('a');
+            const dateBadgeStr = (document.getElementById('report-date').textContent || 'Sales_Report').replace(/\s+/g, '_');
+            downloadLink.href = csvUrl;
+            downloadLink.setAttribute('download', `Consolidated_Sales_Report_${dateBadgeStr}.csv`);
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        function exportToCSV() {
+            return exportConsolidatedToCSV();
         }
 
         function resetAutomator() {
             hideAlerts();
             fileInput.value = '';
+            loadedFiles = [];
+            currentCSVText = '';
+            
+            resetDropZoneToLanding();
             reportContainer.style.display = 'none';
-            dropZone.style.display = 'flex';
-            document.querySelector('.header-container').style.display = 'block';
+            if (tableWrapper) tableWrapper.innerHTML = '';
+            if (agentFiltersContainer) agentFiltersContainer.innerHTML = '';
+            if (itemFiltersContainer) itemFiltersContainer.innerHTML = '';
+            
+            const loadedFilesBar = document.getElementById('loaded-files-bar');
+            if (loadedFilesBar) {
+                loadedFilesBar.style.display = 'none';
+                loadedFilesBar.innerHTML = '';
+            }
+
+            const dateElement = document.getElementById('report-date');
+            if (dateElement) dateElement.textContent = 'Date not found';
+
+            // Clear search variables
+            numberSearchQuery = '';
+            const searchField = document.getElementById('search-number');
+            if (searchField) searchField.value = '';
+            const clearBtn = document.getElementById('clear-search');
+            if (clearBtn) clearBtn.style.display = 'none';
+            const searchTrigger = document.getElementById('floating-search-trigger');
+            if (searchTrigger) searchTrigger.style.display = 'none';
+            const searchPopup = document.getElementById('floating-search-popup');
+            if (searchPopup) searchPopup.style.display = 'none';
+
+            // Clear ERS filter variables
+            uniqueErsAmounts.clear();
+            uniqueErsCategories.clear();
+
+            // Clear report state and sets
+            globalSummary = {};
+            uniqueItems.clear();
+            uniqueAgents.clear();
+            unmappedReportItems.clear();
+            consolidated = {};
+        }
+ 
+        function handleSearch(val) {
+            numberSearchQuery = val.trim();
+            const clearBtn = document.getElementById('clear-search');
+            if (clearBtn) {
+                clearBtn.style.display = numberSearchQuery.length > 0 ? 'flex' : 'none';
+            }
+            debouncedGenerateTable();
+        }
+ 
+        function clearSearch() {
+            const searchField = document.getElementById('search-number');
+            if (searchField) {
+                searchField.value = '';
+            }
+            handleSearch('');
+        }
+ 
+        function toggleSearchPopup() {
+            const popup = document.getElementById('floating-search-popup');
+            if (!popup) return;
+            const isVisible = popup.style.display === 'flex';
+            if (isVisible) {
+                popup.style.animation = 'popupOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards';
+                setTimeout(() => {
+                    popup.style.display = 'none';
+                }, 200);
+            } else {
+                popup.style.display = 'flex';
+                popup.style.animation = 'popupIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards';
+                const searchField = document.getElementById('search-number');
+                if (searchField) searchField.focus();
+            }
         }
 
         // Toggle Expandable Details Rows
@@ -1365,6 +3170,22 @@
                     arrow.textContent = '▼';
                     arrow.style.transform = 'rotate(90deg)';
                 }
+                
+                // Dynamically load badges on first expand to prevent layout & rendering freezes on large sheets
+                const wrapper = row.querySelector('.badges-wrapper');
+                if (wrapper) {
+                    const dataStr = wrapper.getAttribute('data-numbers');
+                    if (dataStr && wrapper.querySelector('.text-muted')) {
+                        try {
+                            const numbers = JSON.parse(decodeURIComponent(dataStr));
+                            wrapper.innerHTML = numbers.map(sim => {
+                                return `<span class="number-badge" title="Sold by: ${sim.agent.toUpperCase()} (Click to copy)" onclick="copyToClipboard('${sim.number}', this, event, '${sim.agent.toUpperCase()}')">${sim.number}</span>`;
+                            }).join('');
+                        } catch (e) {
+                            console.error('Failed to parse dynamic number badges:', e);
+                        }
+                    }
+                }
             } else {
                 row.style.display = 'none';
                 if (arrow) {
@@ -1374,8 +3195,33 @@
             }
         }
 
+        // Toast Notification System
+        function showToast(message) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'toastOut 0.3s ease forwards';
+                setTimeout(() => {
+                    toast.remove();
+                    if (container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 300);
+            }, 2700);
+        }
+
         // Copy Text/Badge contents to Clipboard
-        function copyToClipboard(text, element, event) {
+        function copyToClipboard(text, element, event, agentName) {
             if (event) event.stopPropagation();
             navigator.clipboard.writeText(text).then(() => {
                 const originalHTML = element.innerHTML;
@@ -1386,6 +3232,13 @@
                     element.style.background = 'var(--success)';
                     element.style.color = '#ffffff';
                     element.style.borderColor = 'var(--success)';
+                    
+                    if (agentName) {
+                        showToast(`📋 Copied ${text} (Sold by: ${agentName})`);
+                    } else {
+                        showToast(`📋 Copied ${text}`);
+                    }
+                    
                     setTimeout(() => {
                         element.innerHTML = originalHTML;
                         element.style.background = '';
@@ -1400,6 +3253,7 @@
                         Copied!
                     `;
                     element.classList.add('copied');
+                    showToast(`📋 Copied all numbers for this product`);
                     setTimeout(() => {
                         element.innerHTML = originalHTML;
                         element.classList.remove('copied');
@@ -1440,6 +3294,72 @@
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
         updateThemeButton(savedTheme);
+
+        // Expand all deferred badges before printing so the PDF contains everything
+        window.addEventListener('beforeprint', () => {
+            document.querySelectorAll('.badges-wrapper[data-numbers]').forEach(wrapper => {
+                const dataStr = wrapper.getAttribute('data-numbers');
+                if (dataStr) {
+                    try {
+                        const numbers = JSON.parse(decodeURIComponent(dataStr));
+                        wrapper.innerHTML = numbers.map(sim => {
+                            return `<span class="number-badge" title="Sold by: ${sim.agent.toUpperCase()} (Click to copy)" onclick="copyToClipboard('${sim.number}', this, event, '${sim.agent.toUpperCase()}')">${sim.number}</span>`;
+                        }).join('');
+                    } catch (e) {}
+                }
+            });
+        });
     </script>
+ 
+    <!-- Floating Search Trigger and Panel -->
+    <button id="floating-search-trigger" onclick="toggleSearchPopup()" aria-label="Search mobile numbers">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+    </button>
+ 
+    <div id="floating-search-popup" class="floating-search-popup">
+        <div class="floating-search-header">
+            <span class="floating-search-title">Search Service Number</span>
+            <button class="floating-search-close" onclick="toggleSearchPopup()" title="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="floating-search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-number" placeholder="Enter phone number..." oninput="handleSearch(this.value)">
+            <button id="clear-search" onclick="clearSearch()" style="display: none;" title="Clear Search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Smart Mapping Modal -->
+    <div id="mapping-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Resolve Unknown Products</h3>
+                <button onclick="closeMappingModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-color);">&times;</button>
+            </div>
+            <div class="modal-body" id="mapping-modal-body">
+                <!-- Dynamically populated rows -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeMappingModal()">Cancel</button>
+                <button class="btn" onclick="saveMappings()">Save & Apply</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
